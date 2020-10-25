@@ -97,7 +97,7 @@ class updateAxes:
             self.ax4.cla()
             self.ax4.stock_img()
             self.ax4.add_feature(Nightshade(datetime.now(), alpha=.3))
-            self.ax4TimeToUpdate += timedelta(seconds=20)
+            self.ax4TimeToUpdate += timedelta(seconds=21)
         
 
 fig = plt.figure(figsize=(8, 6), facecolor='w')
