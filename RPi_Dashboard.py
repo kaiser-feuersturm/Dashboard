@@ -7,11 +7,18 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import cartopy.crs as ccrs
 from cartopy.feature.nightshade import Nightshade
+import json
+import urllib3
 
 cpuTimes = psutil.cpu_times()
 cpuCount = psutil.cpu_count()
 
 sysStatsLogLengthInSecs = 60
+CitiesCoords = {
+    'Manhattan': [40.783, -73.967],
+    'Hefei': [31.821, 117.227],
+    'Las Vegas': [36.175, -115.136],
+}
 
 
 def updateSysStats(sysStats):
@@ -49,31 +56,32 @@ class updateAxes:
         self.ax1 = fig.add_subplot(221, projection='3d', xlim=(-sysStatsLogLengthInSecs, 0), zlim=(0, 100), xlabel='time (s)', ylabel='CPU#', zlabel='CPU%')
         self.ax1.set_zlabel('CPU%', rotation='vertical')
         self.ax1props = {'xlim':(-sysStatsLogLengthInSecs, 0), 'zlim':(0, 100), 'xlabel':'time (s)', 'ylabel':'CPU#', 'zlabel':'CPU%'}
-        self.ax2 = fig.add_subplot(222, xlim=(-sysStatsLogLengthInSecs, 0), ylim=(0, 100), xlabel='time (s)', ylabel='T$_{CPU}$ ($^o$C)')
-        self.ax3 = fig.add_subplot(223, xlim=(-sysStatsLogLengthInSecs, 0), ylim=(0, 100), xlabel='time (s)', ylabel='mem%')
-        for axItr in [self.ax2, self.ax3]:
+        self.ax2 = fig.add_subplot(222, xlim=(-sysStatsLogLengthInSecs, 0), ylim=(0, 100), xlabel='time (s)', ylabel='T$_{CPU}$ ($^o$C) | mem%')
+#         self.ax3 = fig.add_subplot(223, xlim=(-sysStatsLogLengthInSecs, 0), ylim=(0, 100), xlabel='time (s)', ylabel='mem%')
+        for axItr in [self.ax2]:
             axItr.grid(True, alpha=.5)
             axItr.yaxis.set_label_position('right')
             axItr.yaxis.tick_right()
 #         self.ax4 = fig.add_subplot(224, projection=ccrs.NearsidePerspective(central_longitude=-74, central_latitude=40.5))
-        self.ax4 = fig.add_subplot(224, projection=ccrs.Robinson())
+        self.ax4 = plt.subplot2grid((2, 2), (1, 0), colspan=2, projection=ccrs.Robinson())
         self.ax4TimeToUpdate = datetime.now()
         # initialize
         self.sysStats = updateSysStats(self.sysStats)
-        self.lines = [[] for idx in range(4)]
+        self.lines = [[], {}, [], []]
         sysStatsX = extractSysStats(self.sysStats, 'time')
         #CPU percentage
         cpuPercent = extractSysStats(self.sysStats, 'cpuPercent')
         #CPU temperature
         cpuTempCel = extractSysStats(self.sysStats, 'cpuTempCel')
-        line, = self.ax2.plot(sysStatsX, cpuTempCel, 'd-r', ms=2)
-        self.lines[1].append(line)
+        line, = self.ax2.plot(sysStatsX, cpuTempCel, 'd-r', ms=3)
+        self.lines[1]['cpuTempCel'] = line
         #memory percertange
         memPercent = extractSysStats(self.sysStats, 'memPercent')
-        line, = self.ax3.plot(sysStatsX, memPercent, 'o-c', ms=2)
-        self.lines[2] = [line]
+        line, = self.ax2.plot(sysStatsX, memPercent, 'o-c', ms=3)
+        self.lines[1]['memPercent'] = line
         #globe
 #         self.ax4.stock_img()
+        self.http = urllib3.PoolManager()
         
         
     def __call__(self, i):
@@ -88,15 +96,26 @@ class updateAxes:
             self.ax1.bar(sysStatsX, cpuPercent[idx], width=2, zs=idx, zdir='y', color=color*len(sysStatsX), alpha=.8)
         #CPU temperature
         cpuTempCel = extractSysStats(self.sysStats, 'cpuTempCel')
-        self.lines[1][0].set_data(sysStatsX, cpuTempCel)
+        self.lines[1]['cpuTempCel'].set_data(sysStatsX, cpuTempCel)
         #memory percertange
         memPercent = extractSysStats(self.sysStats, 'memPercent')
-        self.lines[2][0].set_data(sysStatsX, memPercent)
+        self.lines[1]['memPercent'].set_data(sysStatsX, memPercent)
         #globe
         if max(self.sysStats.keys())>self.ax4TimeToUpdate:
+            geolocResponse = self.http.request('GET', 'http://ipinfo.io/json')
+            geolocData = json.loads(geolocResponse.data)
+            geolocCoords = eval(geolocData['loc'])[0:2]
             self.ax4.cla()
-            self.ax4.stock_img()
-            self.ax4.add_feature(Nightshade(datetime.now(), alpha=.3))
+            self.ax4.set_global()
+            self.ax4.coastlines()
+#             self.ax4.stock_img()
+#             self.ax4.background_img(name='BM', resolution='low')
+            self.ax4.add_feature(Nightshade(datetime.utcnow(), alpha=.3))
+            scatterLongitudes = [x[1] for x in CitiesCoords.values()]+[geolocCoords[1]]
+            scatterLatitudes = [x[0] for x in CitiesCoords.values()]+[geolocCoords[0]]
+            scatterColors = ['y']*len(CitiesCoords)+['r']
+            self.ax4.scatter(scatterLongitudes, scatterLatitudes, s=30, c=scatterColors, alpha=.8, transform=ccrs.PlateCarree())
+            self.ax4.gridlines(crs=ccrs.PlateCarree(), xlocs=[], ylocs=[geolocCoords[0]], color='r')
             self.ax4TimeToUpdate += timedelta(seconds=21)
         
 
