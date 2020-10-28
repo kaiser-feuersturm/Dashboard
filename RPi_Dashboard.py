@@ -18,7 +18,7 @@ cpuCount = psutil.cpu_count()
 
 sysStatsLogLengthInSecs = 60
 CitiesCoords = {
-    'Manhattan': [40.783, -73.967],
+    'New York': [40.783, -73.967],
     'Hefei': [31.821, 117.227],
     'Las Vegas': [36.175, -115.136],
 }
@@ -117,11 +117,11 @@ class updateAxes:
             self.ax4.add_feature(Nightshade(utcnow, alpha=.15))
             scatterLongitudes = [x[1] for x in CitiesCoords.values()]#+[geolocCoords[1]]
             scatterLatitudes = [x[0] for x in CitiesCoords.values()]#+[geolocCoords[0]]
-            scatterColors = ['y']*len(CitiesCoords)#+['r']
-            self.ax4.scatter(scatterLongitudes, scatterLatitudes, s=15, c=scatterColors, alpha=.8, transform=ccrs.PlateCarree())
-            self.ax4.plot([geolocCoords[1]], [geolocCoords[0]], ms=5, c='r', transform=ccrs.PlateCarree(),
-                          **{'marker': '$\\bigoplus$', 'linestyle': '', 'markeredgewidth': .05})
-            self.ax4.gridlines(crs=ccrs.PlateCarree(), xlocs=[], ylocs=[geolocCoords[0]], color='r')
+            scatterColors = ['c']*len(CitiesCoords)#+['r']
+            self.ax4.scatter(scatterLongitudes, scatterLatitudes, s=10, c=scatterColors, alpha=.8, transform=ccrs.PlateCarree())
+            self.ax4.gridlines(crs=ccrs.PlateCarree(), xlocs=[geolocCoords[1]], ylocs=[geolocCoords[0]], color='y', alpha=.4)
+            self.ax4.plot([geolocCoords[1]], [geolocCoords[0]], ms=7, c='r', transform=ccrs.PlateCarree(),
+                          **{'marker': '$\\bigoplus$', 'linestyle': '', 'markeredgewidth': .1})
             for (k,v) in CitiesCoords.items():
                 self.ax4.text(v[1]+3, v[0]-3, k, fontsize='xx-small', color='b', alpha=.95, horizontalalignment='left',
                               verticalalignment='top', transform=ccrs.Geodetic())
@@ -142,11 +142,11 @@ class updateAxes:
                                      alpha=.99, horizontalalignment=txtPosAlignHor, transform=ccrs.Geodetic())
                 for (meStr, txtPosAlignHor, txtPosShiftHor) in zip(sunHHMMs, ['right', 'left'], [-3, 3])
             ]
-            for txtObj in meStrTxts: txtObj.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='w')])
+            for txtObj in meStrTxts: txtObj.set_path_effects([PathEffects.withStroke(linewidth=2, foreground='w')])
             self.ax4TimeToUpdate += timedelta(seconds=21)
         
 
-fig = plt.figure(figsize=(8, 6), facecolor='w')
+fig = plt.figure(figsize=(10, 7), facecolor='w')
 animate = updateAxes(fig)
 anim = animation.FuncAnimation(fig, animate, interval=1000, repeat=False)
 plt.show()
