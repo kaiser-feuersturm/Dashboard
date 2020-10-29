@@ -59,8 +59,15 @@ class updateAxes:
         self.ax1 = fig.add_subplot(221, projection='3d', xlim=(-sysStatsLogLengthInSecs, 0), zlim=(0, 100), xlabel='time (s)', ylabel='CPU#', zlabel='CPU%')
         self.ax1.set_zlabel('CPU%', rotation='vertical')
         self.ax1props = {'xlim':(-sysStatsLogLengthInSecs, 0), 'zlim':(0, 100), 'xlabel':'time (s)', 'ylabel':'CPU#', 'zlabel':'CPU%'}
-        self.ax2 = fig.add_subplot(222, xlim=(-sysStatsLogLengthInSecs, 0), ylim=(0, 100), xlabel='time (s)', ylabel='T$_{CPU}$ ($^o$C) | mem%')
-#         self.ax3 = fig.add_subplot(223, xlim=(-sysStatsLogLengthInSecs, 0), ylim=(0, 100), xlabel='time (s)', ylabel='mem%')
+        self.ax2 = fig.add_subplot(222, xlim=(-sysStatsLogLengthInSecs, 0), ylim=(0, 100), xlabel='time (s)', ylabel='T$_{CPU}$ ($^o$C)')
+        self.ax2.yaxis.label.set_color('r')
+        self.ax2.tick_params(axis='y', colors='r')
+        self.ax3 = self.ax2.twinx()
+        self.ax3.set(ylim=(0, 100), ylabel='mem%')
+        self.ax3.yaxis.tick_left()
+        self.ax3.yaxis.set_label_position('left')
+        self.ax3.yaxis.label.set_color('c')
+        self.ax3.tick_params(axis='y', colors='c')
         for axItr in [self.ax2]:
             axItr.grid(True, alpha=.5)
             axItr.yaxis.set_label_position('right')
@@ -80,7 +87,7 @@ class updateAxes:
         self.lines[1]['cpuTempCel'] = line
         #memory percertange
         memPercent = extractSysStats(self.sysStats, 'memPercent')
-        line, = self.ax2.plot(sysStatsX, memPercent, '.-c', ms=3, lw=.5)
+        line, = self.ax3.plot(sysStatsX, memPercent, '.-c', ms=3, lw=.5)
         self.lines[1]['memPercent'] = line
         #globe
 #         self.ax4.stock_img()
