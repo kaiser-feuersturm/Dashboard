@@ -21,6 +21,8 @@ CitiesCoords = {
     'New York': [40.783, -73.967],
     'Hefei': [31.821, 117.227],
     'Las Vegas': [36.175, -115.136],
+#     'Troy': [42.732, -73.693],
+    'Lahaina': [20.886, -156.675],
 }
 
 
@@ -75,6 +77,8 @@ class updateAxes:
 #         self.ax4 = fig.add_subplot(224, projection=ccrs.NearsidePerspective(central_longitude=-74, central_latitude=40.5))
         self.ax4 = plt.subplot2grid((2, 2), (1, 0), colspan=2, projection=ccrs.Robinson())
         self.ax4TimeToUpdate = datetime.now()
+        self.ax4TimeToGeoLoc = datetime.now()
+        self.ax4GeoLoc = CitiesCoords['New York']
         # initialize
         self.sysStats = updateSysStats(self.sysStats)
         self.lines = [[], {}, [], []]
@@ -112,9 +116,14 @@ class updateAxes:
         self.lines[1]['memPercent'].set_data(sysStatsX, memPercent)
         #globe
         if max(self.sysStats.keys())>self.ax4TimeToUpdate:
-            geolocResponse = self.http.request('GET', 'http://ipinfo.io/json')
-            geolocData = json.loads(geolocResponse.data)
-            geolocCoords = eval(geolocData['loc'])[0:2]
+            if max(self.sysStats.keys())>self.ax4TimeToGeoLoc:
+                try:
+                    geolocResponse = self.http.request('GET', 'http://ipinfo.io/json')
+                    geolocData = json.loads(geolocResponse.data)
+                    self.ax4GeoLoc = eval(geolocData['loc'])[0:2]
+                except:
+                    self.ax4GeoLoc = self.ax4GeoLoc
+            
             self.ax4.cla()
             self.ax4.set_global()
             self.ax4.coastlines()
@@ -122,17 +131,17 @@ class updateAxes:
 #             self.ax4.background_img(name='BM', resolution='low')
             utcnow = datetime.utcnow()
             self.ax4.add_feature(Nightshade(utcnow, alpha=.15))
-            scatterLongitudes = [x[1] for x in CitiesCoords.values()]#+[geolocCoords[1]]
-            scatterLatitudes = [x[0] for x in CitiesCoords.values()]#+[geolocCoords[0]]
+            scatterLongitudes = [x[1] for x in CitiesCoords.values()]#+[self.ax4GeoLoc[1]]
+            scatterLatitudes = [x[0] for x in CitiesCoords.values()]#+[self.ax4GeoLoc[0]]
             scatterColors = ['c']*len(CitiesCoords)#+['r']
             self.ax4.scatter(scatterLongitudes, scatterLatitudes, s=10, c=scatterColors, alpha=.8, transform=ccrs.PlateCarree())
-            self.ax4.gridlines(crs=ccrs.PlateCarree(), xlocs=[geolocCoords[1]], ylocs=[geolocCoords[0]], color='y', alpha=.4)
-            self.ax4.plot([geolocCoords[1]], [geolocCoords[0]], ms=7, c='r', transform=ccrs.PlateCarree(),
+            self.ax4.gridlines(crs=ccrs.PlateCarree(), xlocs=[self.ax4GeoLoc[1]], ylocs=[self.ax4GeoLoc[0]], color='y', alpha=.4)
+            self.ax4.plot([self.ax4GeoLoc[1]], [self.ax4GeoLoc[0]], ms=7, c='r', transform=ccrs.PlateCarree(),
                           **{'marker': '$\\bigoplus$', 'linestyle': '', 'markeredgewidth': .1})
             for (k,v) in CitiesCoords.items():
                 self.ax4.text(v[1]+3, v[0]-3, k, fontsize='xx-small', color='b', alpha=.95, horizontalalignment='left',
                               verticalalignment='top', transform=ccrs.Geodetic())
-            sun = Sun(geolocCoords[0], geolocCoords[1])
+            sun = Sun(self.ax4GeoLoc[0], self.ax4GeoLoc[1])
             today = utcnow.date()
             sunrises = [sun.get_sunrise_time(d) for d in [today-timedelta(days=1), today, today+timedelta(days=1)]]
             sunsets = [sun.get_sunset_time(d) for d in [today-timedelta(days=1), today, today+timedelta(days=1)]]
@@ -145,12 +154,13 @@ class updateAxes:
             sunHours = [td.days*24+td.seconds/3600 for td in sunHoursDeltas]
             sunHHMMs = ['{:+03.0f}:{:02.0f}'.format(math.trunc(sh), 60*abs(sh-math.trunc(sh))) for sh in sunHours]
             meStrTxts = [
-                self.ax4.text(geolocCoords[1]+txtPosShiftHor, geolocCoords[0]+3, meStr, fontsize='xx-small', fontweight='normal', color='m',
+                self.ax4.text(self.ax4GeoLoc[1]+txtPosShiftHor, self.ax4GeoLoc[0]+3, meStr, fontsize='xx-small', fontweight='normal', color='m',
                                      alpha=.99, horizontalalignment=txtPosAlignHor, transform=ccrs.Geodetic())
                 for (meStr, txtPosAlignHor, txtPosShiftHor) in zip(sunHHMMs, ['right', 'left'], [-3, 3])
             ]
             for txtObj in meStrTxts: txtObj.set_path_effects([PathEffects.withStroke(linewidth=2, foreground='w')])
-            self.ax4TimeToUpdate += timedelta(seconds=21)
+            self.ax4TimeToUpdate += timedelta(seconds=300)
+            self.ax4TimeToGeoLoc += timedelta(seconds=1200)
         
 
 fig = plt.figure(figsize=(10, 7), facecolor='w')
