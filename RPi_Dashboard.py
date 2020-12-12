@@ -34,7 +34,7 @@ def updateSysStats(sysStats):
     sysStats[localTime] = {
         'cpuPercent': cpuPercent,
         'memPercent': memStats.percent,
-        'cpuTempCel': tmpSensors['cpu-thermal'][0].current,
+        'cpuTempCel': tmpSensors['cpu_thermal'][0].current,
     }
     sysStats = {k:v for (k,v) in sysStats.items() if (localTime-k).total_seconds()<sysStatsLogLengthInSecs}
     return sysStats
@@ -163,7 +163,7 @@ class updateAxes:
             self.ax4TimeToGeoLoc += timedelta(seconds=1200)
         
 
-fig = plt.figure(figsize=(10, 7), facecolor='w')
+fig = plt.figure('Dashboard', figsize=(10, 7), facecolor='w')
 animate = updateAxes(fig)
 anim = animation.FuncAnimation(fig, animate, interval=1000, repeat=False)
 plt.show()
