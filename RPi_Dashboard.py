@@ -1,3 +1,4 @@
+import sys
 import psutil
 from datetime import datetime, timedelta
 import time
@@ -6,6 +7,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.patheffects as PathEffects
+import matplotlib.ticker as ticker
 import cartopy.crs as ccrs
 from cartopy.feature.nightshade import Nightshade
 import json
@@ -55,13 +57,33 @@ def extractSysStats(sysStats, cpnt='cpuPercent'):
 
 class updateAxes:
     def __init__(self, fig):
+        argv = [ str(x).lower() for x in sys.argv ]
+        darkmode = 'dark' in argv
         self.sysStats = {}
         self.fig = fig
+        fig.set_facecolor('k' if darkmode else 'w')
         plt.subplots_adjust(wspace=.3)
         self.ax1 = fig.add_subplot(221, projection='3d', xlim=(-sysStatsLogLengthInSecs, 0), zlim=(0, 100), xlabel='time (s)', ylabel='CPU#', zlabel='CPU%')
         self.ax1.set_zlabel('CPU%', rotation='vertical')
-        self.ax1props = {'xlim':(-sysStatsLogLengthInSecs, 0), 'zlim':(0, 100), 'xlabel':'time (s)', 'ylabel':'CPU#', 'zlabel':'CPU%'}
-        self.ax2 = fig.add_subplot(222, xlim=(-sysStatsLogLengthInSecs, 0), ylim=(0, 100), xlabel='time (s)', ylabel='T$_{CPU}$ ($^o$C)')
+        self.ax1.xaxis.label.set_color('w' if darkmode else 'k')
+        self.ax1.yaxis.label.set_color('w' if darkmode else 'k')
+        self.ax1.zaxis.label.set_color('w' if darkmode else 'k')
+        self.ax1.tick_params(axis='x', colors='w' if darkmode else 'k')
+        self.ax1.tick_params(axis='y', colors='w' if darkmode else 'k')
+        self.ax1.tick_params(axis='z', colors='w' if darkmode else 'k')
+        self.ax1props = {
+            'xlim':(-sysStatsLogLengthInSecs, 0),
+            'zlim':(0, 100),
+            'xlabel':'time (s)',
+            'ylabel':'CPU#',
+            'zlabel':'CPU%',
+            'yticks':np.linspace(0, cpuCount-1, cpuCount),
+            'fc':'k' if darkmode else 'w',
+        }
+        self.ax2 = fig.add_subplot(222, xlim=(-sysStatsLogLengthInSecs, 0), ylim=(0, 100), xlabel='time (s)', ylabel='T$_{CPU}$ ($^o$C)',
+                                   fc='k' if darkmode else 'w')
+        self.ax2.xaxis.label.set_color('w' if darkmode else 'k')
+        self.ax2.tick_params(axis='x', colors='w' if darkmode else 'k')
         self.ax2.yaxis.label.set_color('r')
         self.ax2.tick_params(axis='y', colors='r')
         self.ax3 = self.ax2.twinx()
@@ -70,6 +92,10 @@ class updateAxes:
         self.ax3.yaxis.set_label_position('left')
         self.ax3.yaxis.label.set_color('c')
         self.ax3.tick_params(axis='y', colors='c')
+
+        for spine in self.ax3.spines.values():
+            spine.set_edgecolor('w' if darkmode else 'k')
+
         for axItr in [self.ax2]:
             axItr.grid(True, alpha=.5)
             axItr.yaxis.set_label_position('right')
