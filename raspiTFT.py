@@ -24,9 +24,12 @@ def memfunc_decorator(min_time_inter_update, min_time_to_consume=0):
             ref = args[0]
             _time = time.time()
 
-            if _time > ref.time_to_update:
+            if _time > ref.time_to_update or ref.mode != ref.mode_prev:
                 retval = func(*args, **kwargs)
                 ref.time_to_update = time.time() + min_time_inter_update
+                ref.mode_prev = ref.mode
+            else:
+                retval = None
 
             _time = time.time() - _time
 
@@ -45,6 +48,7 @@ class tft_disp:
         button_a_pin=button_a_pin, button_b_pin=button_b_pin,
         spi=None
     ):
+        self.mode_prev = 0
         self.mode = 0
         self.width = width
         self.height = height
@@ -72,7 +76,7 @@ class tft_disp:
 
     @memfunc_decorator(30)
     def clear(self):
-        self.backlight = False
+        self.backlight.value = False
         image = Image.new('RGB', (self.width, self.height))
         draw = ImageDraw.Draw(image)
         draw.rectangle((0, 0, self.width, self.height), outline=0, fill=(0,0,0))
@@ -80,12 +84,12 @@ class tft_disp:
 
     @memfunc_decorator(30)
     def fill(self):
-        self.backlight = True
+        self.backlight.value = True
         self.disp.fill(color565(0, 255, 0))
 
     @memfunc_decorator(30)
     def disp_mandelbrot(self):
-        self.backlight = True
+        self.backlight.value = True
         image = Image.effect_mandelbrot((self.width, self.height), (0, 0, self.width, self.height), 100)
         self.disp.image(image, self.rotation)
 
@@ -97,7 +101,7 @@ class tft_disp:
         tmp_sensors = repr(psutil.sensors_temperatures()['cpu_thermal'][0].current)
 
         font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24)
-        self.backlight = True
+        self.backlight.value = True
         image = Image.new('RGB', (self.width, self.height))
         draw = ImageDraw.Draw(image)
         x = y = 0
