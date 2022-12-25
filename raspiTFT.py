@@ -1,3 +1,4 @@
+import functools
 import time
 import subprocess
 import digitalio
@@ -14,8 +15,27 @@ backlight_pin = board.D22
 button_a_pin, button_b_pin = board.D23, board.D24
 
 
+def memfunc_decorator(min_time_inter_update, min_time_to_consume=.5):
+    def decorate_inner(func):
+        @functools.wraps(func)
+        def wrapper_dec(*args, **kwargs):
+            _time = time.time()
+
+            retval = func(*args, **kwargs)
+            ref = args[0]
+            ref.time_to_update = time.time() + min_time_inter_update
+
+            _time = time.time() - _time
+            if _time < min_time_to_consume:
+                time.sleep(min_time_to_consume - _time)
+
+            return retval
+        return wrapper_dec
+    return decorate_inner
+
+
 class tft_disp:
-    def __int__(self, baudrate=64e6,
+    def __init__(self, baudrate=64000000,
         width=width, height=height, rotation=rotation, x_offset=0, y_offset=80,
         cs_pin=cs_pin, dc_pin=dc_pin, reset_pin=None, backlight_pin=backlight_pin,
         button_a_pin=button_a_pin, button_b_pin=button_b_pin,
@@ -25,6 +45,7 @@ class tft_disp:
         self.width = width
         self.height = height
         self.rotation = rotation
+        self.time_to_update = time.time()
 
         spi = board.SPI() if spi is None else spi
         cs_io = digitalio.DigitalInOut(cs_pin)
@@ -44,6 +65,7 @@ class tft_disp:
             width=width, height=height, x_offset=x_offset, y_offset=y_offset
         )
 
+    @memfunc_decorator(30)
     def clear(self):
         self.backlight = False
         image = Image.new('RGB', (self.width, self.height))
@@ -51,10 +73,12 @@ class tft_disp:
         draw.rectangle((0, 0, self.width, self.height), outline=0, fill=(0,0,0))
         self.disp.image(image, self.rotation)
 
+    @memfunc_decorator(30)
     def fill(self):
         self.backlight = True
         self.disp.fill(color565(0, 255, 0))
 
+    @memfunc_decorator(30)
     def disp_mandelbrot(self):
         self.backlight = True
         image = Image.effect_mandelbrot((self.width, self.height), (0, 0, self.width, self.height), 100)
@@ -65,16 +89,19 @@ if __name__ == '__main__':
     tft = tft_disp()
 
     while True:
-        if tft.button_a and tft.button_b:
+        if tft.button_a.value and tft.button_b.value:
             tft.clear()
-        elif tft.button_a:
-            tft.mode = (tft.mode + 1) % 3
-        elif tft.button_b:
-            tft.mode = (tft.mode - 1) % 3
+        elif tft.button_a.value:
+            tft.mode += 1
+        elif tft.button_b.value:
+            tft.mode -= 1
+
+        tft.mode = tft.mode % 3
+        print('mode ' + repr(tft.mode) + '\t' + repr(time.time()))
 
         if 0 == tft.mode:
-            tft.disp_mandelbrot()
-        elif 1 == tft.mode:
+        #     tft.disp_mandelbrot()
+        # elif 1 == tft.mode:
             tft.fill()
         elif 2 == tft.mode:
             tft.clear()
