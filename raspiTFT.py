@@ -1,21 +1,23 @@
 import functools
-import time
+import time, datetime
 import subprocess
 import digitalio
 import board
+import psutil
 from PIL import Image, ImageDraw, ImageFont
 from adafruit_rgb_display import st7789
 from adafruit_rgb_display.rgb import color565
 
 width = height = 240
 rotation = 90
+time_interval_button = .8
 
 cs_pin, dc_pin = board.CE0, board.D25
 backlight_pin = board.D22
 button_a_pin, button_b_pin = board.D23, board.D24
 
 
-def memfunc_decorator(min_time_inter_update, min_time_to_consume=.5):
+def memfunc_decorator(min_time_inter_update, min_time_to_consume=0):
     def decorate_inner(func):
         @functools.wraps(func)
         def wrapper_dec(*args, **kwargs):
@@ -26,6 +28,7 @@ def memfunc_decorator(min_time_inter_update, min_time_to_consume=.5):
             ref.time_to_update = time.time() + min_time_inter_update
 
             _time = time.time() - _time
+
             if _time < min_time_to_consume:
                 time.sleep(min_time_to_consume - _time)
 
@@ -46,6 +49,7 @@ class tft_disp:
         self.height = height
         self.rotation = rotation
         self.time_to_update = time.time()
+        self.time_to_read_button = time.time()
 
         spi = board.SPI() if spi is None else spi
         cs_io = digitalio.DigitalInOut(cs_pin)
@@ -84,24 +88,50 @@ class tft_disp:
         image = Image.effect_mandelbrot((self.width, self.height), (0, 0, self.width, self.height), 100)
         self.disp.image(image, self.rotation)
 
+    @memfunc_decorator(1)
+    def disp_system_stats(self):
+        time_local = repr(datetime.datetime.now())
+        cpu_pct = repr(psutil.cpu_percent(interval=1, percpu=True))
+        mem_stats = repr(psutil.virtual_memory().percent)
+        tmp_sensors = repr(psutil.sensors_temperatures()['cpu_thermal'][0].current)
+
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24)
+        self.backlight = True
+        image = Image.new('RGB', (self.width, self.height))
+        draw = ImageDraw.Draw(image)
+        x = y = 0
+        draw.text((x,y), time_local, font=font, fill='#FFFFFF')
+        y += font.getsize(time_local)[1]
+        draw.text((x,y), cpu_pct, font=font, fill='#FFFF00')
+        y += font.getsize(cpu_pct)[1]
+        draw.text((x,y), mem_stats, font=font, fill='#00FF00')
+        y += font.getsize(mem_stats)[1]
+        draw.text((x,y), tmp_sensors, font=font, fill='#0000FF')
+
+
 
 if __name__ == '__main__':
     tft = tft_disp()
 
     while True:
-        if tft.button_a.value and tft.button_b.value:
-            tft.clear()
-        elif tft.button_a.value:
-            tft.mode += 1
-        elif tft.button_b.value:
-            tft.mode -= 1
+        if time.time() > tft.time_to_read_button:
+            tft.time_to_read_button = time.time() + time_interval_button
+            button_a, button_b = tft.button_a.value, tft.button_b.value
+            print('reading button: ' + repr(time.time()) + repr(button_a) + ' ' + repr(button_b))
+
+            if button_a and button_b:
+                tft.clear()
+            elif button_a:
+                tft.mode += 1
+            elif button_b:
+                tft.mode -= 1
 
         tft.mode = tft.mode % 3
         print('mode ' + repr(tft.mode) + '\t' + repr(time.time()))
 
         if 0 == tft.mode:
-        #     tft.disp_mandelbrot()
-        # elif 1 == tft.mode:
+            tft.disp_system_stats()
+        elif 1 == tft.mode:
             tft.fill()
         elif 2 == tft.mode:
             tft.clear()
