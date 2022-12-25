@@ -10,7 +10,7 @@ from adafruit_rgb_display.rgb import color565
 
 width = height = 240
 rotation = 90
-time_interval_button = .8
+time_interval_button = .2
 
 cs_pin, dc_pin = board.CE0, board.D25
 backlight_pin = board.D22
@@ -21,11 +21,12 @@ def memfunc_decorator(min_time_inter_update, min_time_to_consume=0):
     def decorate_inner(func):
         @functools.wraps(func)
         def wrapper_dec(*args, **kwargs):
+            ref = args[0]
             _time = time.time()
 
-            retval = func(*args, **kwargs)
-            ref = args[0]
-            ref.time_to_update = time.time() + min_time_inter_update
+            if _time > ref.time_to_update:
+                retval = func(*args, **kwargs)
+                ref.time_to_update = time.time() + min_time_inter_update
 
             _time = time.time() - _time
 
@@ -88,7 +89,7 @@ class tft_disp:
         image = Image.effect_mandelbrot((self.width, self.height), (0, 0, self.width, self.height), 100)
         self.disp.image(image, self.rotation)
 
-    @memfunc_decorator(1)
+    @memfunc_decorator(3)
     def disp_system_stats(self):
         time_local = repr(datetime.datetime.now())
         cpu_pct = repr(psutil.cpu_percent(interval=1, percpu=True))
