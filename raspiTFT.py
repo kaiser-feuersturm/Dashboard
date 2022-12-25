@@ -107,7 +107,7 @@ class tft_disp:
         draw.text((x,y), mem_stats, font=font, fill='#00FF00')
         y += font.getsize(mem_stats)[1]
         draw.text((x,y), tmp_sensors, font=font, fill='#0000FF')
-
+        self.disp.image(image, self.rotation)
 
 
 if __name__ == '__main__':
@@ -116,7 +116,7 @@ if __name__ == '__main__':
     while True:
         if time.time() > tft.time_to_read_button:
             tft.time_to_read_button = time.time() + time_interval_button
-            button_a, button_b = tft.button_a.value, tft.button_b.value
+            button_a, button_b = not tft.button_a.value, not tft.button_b.value
             print('reading button: ' + repr(time.time()) + repr(button_a) + ' ' + repr(button_b))
 
             if button_a and button_b:
@@ -126,7 +126,8 @@ if __name__ == '__main__':
             elif button_b:
                 tft.mode -= 1
 
-        tft.mode = tft.mode % 3
+            tft.mode = tft.mode % 3
+
         print('mode ' + repr(tft.mode) + '\t' + repr(time.time()))
 
         if 0 == tft.mode:
