@@ -124,14 +124,14 @@ class tft_disp:
 
         if self.mandelbrot_extent_params['radius'] > scan_params['radius_limits']['max']:
             self.mandelbrot_extent_params['radius_rate'] = 1 / scan_params['radius_change_rate']
-        elif self.mandelbrot_extent_params['radius'] < scan_params['radius_limits']['min']:
+        if self.mandelbrot_extent_params['radius'] < scan_params['radius_limits']['min']:
             self.mandelbrot_extent_params['radius_rate'] = scan_params['radius_change_rate']
 
         self.mandelbrot_extent_params['radius'] *= self.mandelbrot_extent_params['radius_rate']
         self.mandelbrot_extent_params['center'][0] += \
-            scan_params['pan_vel_to_radius_ratio'][0] * self.mandelbrot_extent_params['radius']
+            self.mandelbrot_extent_params['pan_vel_to_radius_ratio'][0] * self.mandelbrot_extent_params['radius']
         self.mandelbrot_extent_params['center'][1] += \
-            scan_params['pan_vel_to_radius_ratio'][1] * self.mandelbrot_extent_params['radius']
+            self.mandelbrot_extent_params['pan_vel_to_radius_ratio'][1] * self.mandelbrot_extent_params['radius']
 
         image = Image.effect_mandelbrot((self.width, self.height), tuple(extent), 100).convert('RGBA')
         # fp_image_disp = os.path.join(os.getcwd(), relfp_image_disp)
