@@ -146,25 +146,26 @@ class tft_disp:
 
 if __name__ == '__main__':
     tft = tft_disp()
+    buffer_mode = 2
 
     while True:
         if time.time() > tft.time_to_read_button:
             tft.time_to_read_button = time.time() + time_interval_button
             button_a, button_b = not tft.button_a.value, not tft.button_b.value
 
-            if button_a and button_b:
-                tft.mode = -tft.mode - 2
+            if (button_a and button_b) or ((button_a or button_b) and -buffer_mode >= tft.mode):
+                tft.mode = -tft.mode - buffer_mode
             elif button_a:
                 tft.mode += 1
             elif button_b:
                 tft.mode -= 1
 
-            if -1 > tft.mode:
+            if -buffer_mode < tft.mode:
                 tft.mode %= 3
 
         print('mode ' + repr(tft.mode) + '\t' + repr(time.time()))
 
-        if -1 > tft.mode:
+        if -buffer_mode >= tft.mode:
             tft.clear()
         elif 0 == tft.mode:
             tft.disp_system_stats()
