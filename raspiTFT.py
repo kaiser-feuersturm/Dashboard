@@ -1,4 +1,4 @@
-import functools
+import functools, os
 import time, datetime
 import subprocess
 import digitalio
@@ -9,12 +9,14 @@ from adafruit_rgb_display import st7789
 from adafruit_rgb_display.rgb import color565
 
 width = height = 240
-rotation = 90
-time_interval_button = .2
+rotation = 270
+time_interval_button = .1
 
 cs_pin, dc_pin = board.CE0, board.D25
 backlight_pin = board.D22
 button_a_pin, button_b_pin = board.D23, board.D24
+
+relfp_image_disp = 'tmp/image_disp.jpg'
 
 
 def memfunc_decorator(min_time_inter_update, min_time_to_consume=0):
@@ -91,27 +93,34 @@ class tft_disp:
     def disp_mandelbrot(self):
         self.backlight.value = True
         image = Image.effect_mandelbrot((self.width, self.height), (0, 0, self.width, self.height), 100)
+        fp_image_disp = os.path.join(os.getcwd(), relfp_image_disp)
+        image.save(fp_image_disp)
+        image = Image.open(fp_image_disp)
         self.disp.image(image, self.rotation)
 
     @memfunc_decorator(3)
     def disp_system_stats(self):
-        time_local = repr(datetime.datetime.now())
-        cpu_pct = repr(psutil.cpu_percent(interval=1, percpu=True))
-        mem_stats = repr(psutil.virtual_memory().percent)
-        tmp_sensors = repr(psutil.sensors_temperatures()['cpu_thermal'][0].current)
+        date_local = time.strftime('%d%b%y')
+        time_local = time.strftime('%H:%M')
+        cpu_pct = 'CPU: {:.0f}%'.format(psutil.cpu_percent(interval=.2, percpu=False))
+        mem_stats = 'Mem: {:.1f}%'.format(psutil.virtual_memory().percent)
+        tmp_sensors = 'Temp: {:.1f} C'.format(psutil.sensors_temperatures()['cpu_thermal'][0].current)
 
         font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24)
         self.backlight.value = True
         image = Image.new('RGB', (self.width, self.height))
         draw = ImageDraw.Draw(image)
         x = y = 0
-        draw.text((x,y), time_local, font=font, fill='#FFFFFF')
+        draw.text((x,y), date_local, font=font, fill='#FFFFFF')
+        x += font.getsize(date_local)[0]
+        draw.text((x, y), time_local, font=font, fill='#00FFFF')
+        x = 0
         y += font.getsize(time_local)[1]
         draw.text((x,y), cpu_pct, font=font, fill='#FFFF00')
         y += font.getsize(cpu_pct)[1]
         draw.text((x,y), mem_stats, font=font, fill='#00FF00')
         y += font.getsize(mem_stats)[1]
-        draw.text((x,y), tmp_sensors, font=font, fill='#0000FF')
+        draw.text((x,y), tmp_sensors, font=font, fill='#FF0000')
         self.disp.image(image, self.rotation)
 
 
@@ -138,6 +147,6 @@ if __name__ == '__main__':
         if 0 == tft.mode:
             tft.disp_system_stats()
         elif 1 == tft.mode:
-            tft.fill()
+            tft.disp_mandelbrot()
         elif 2 == tft.mode:
             tft.clear()
