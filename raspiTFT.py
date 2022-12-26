@@ -10,7 +10,7 @@ from adafruit_rgb_display.rgb import color565
 
 width = height = 240
 rotation = 270
-time_interval_button = .1
+time_interval_button = .2
 
 cs_pin, dc_pin = board.CE0, board.D25
 backlight_pin = board.D22
@@ -58,6 +58,8 @@ class tft_disp:
         self.time_to_update = time.time()
         self.time_to_read_button = time.time()
 
+        self.disp_mode_fill = 0
+
         spi = board.SPI() if spi is None else spi
         cs_io = digitalio.DigitalInOut(cs_pin)
         dc_io = digitalio.DigitalInOut(dc_pin)
@@ -71,7 +73,8 @@ class tft_disp:
         self.backlight.switch_to_output()
         self.backlight.value = True
 
-        self.disp = st7789.ST7789(spi,
+        self.disp = st7789.ST7789(
+            spi,
             cs=cs_io, dc=dc_io, rst=reset_pin, baudrate=baudrate,
             width=width, height=height, x_offset=x_offset, y_offset=y_offset
         )
@@ -79,25 +82,32 @@ class tft_disp:
     @memfunc_decorator(30)
     def clear(self):
         self.backlight.value = False
-        image = Image.new('RGB', (self.width, self.height))
-        draw = ImageDraw.Draw(image)
-        draw.rectangle((0, 0, self.width, self.height), outline=0, fill=(0,0,0))
-        self.disp.image(image, self.rotation)
-
-    @memfunc_decorator(30)
-    def fill(self):
-        self.backlight.value = True
-        self.disp.fill(color565(0, 255, 0))
+        # image = Image.new('RGB', (self.width, self.height))
+        # draw = ImageDraw.Draw(image)
+        # draw.rectangle((0, 0, self.width, self.height), outline=0, fill=(0, 0, 0))
+        # self.disp.image(image, self.rotation)
+        self.disp.fill(0)
 
     @memfunc_decorator(30)
     def disp_mandelbrot(self):
         self.backlight.value = True
-        image = Image.effect_mandelbrot((self.width, self.height), (-2, -1.5, 1, 1.5), 100)
+        image = Image.effect_mandelbrot((self.width, self.height), (-2, -1.5, 1, 1.5), 100).convert('RGBA')
         # fp_image_disp = os.path.join(os.getcwd(), relfp_image_disp)
         # image.save(fp_image_disp)
         # image = Image.open(fp_image_disp)
-        image = image.convert('RGB')
+        # image = image.convert('RGBA')
         self.disp.image(image, self.rotation)
+
+    @memfunc_decorator(60)
+    def disp_fill(self):
+        self.backlight.value = True
+        if 0 == self.disp_mode_fill:
+            self.disp.fill(color565(0, 255, 255))
+        elif 1 == self.disp_mode_fill:
+            self.disp.image(Image.effect_noise((self.width, self.height), 50), self.rotation)
+
+        self.disp_mode_fill += 1
+        self.disp_mode_fill %= 2
 
     @memfunc_decorator(3)
     def disp_system_stats(self):
@@ -112,16 +122,16 @@ class tft_disp:
         image = Image.new('RGB', (self.width, self.height))
         draw = ImageDraw.Draw(image)
         x = y = 0
-        draw.text((x,y), date_local, font=font, fill='#FFFFFF')
+        draw.text((x, y), date_local, font=font, fill='#FFFFFF')
         x += font.getsize(date_local)[0]
         draw.text((x, y), time_local, font=font, fill='#00FFFF')
         x = 0
         y += font.getsize(time_local)[1]
-        draw.text((x,y), cpu_pct, font=font, fill='#FFFF00')
+        draw.text((x, y), cpu_pct, font=font, fill='#FFFF00')
         y += font.getsize(cpu_pct)[1]
-        draw.text((x,y), mem_stats, font=font, fill='#00FF00')
+        draw.text((x, y), mem_stats, font=font, fill='#00FF00')
         y += font.getsize(mem_stats)[1]
-        draw.text((x,y), tmp_sensors, font=font, fill='#FF0000')
+        draw.text((x, y), tmp_sensors, font=font, fill='#FF0000')
         self.disp.image(image, self.rotation)
 
 
@@ -132,7 +142,6 @@ if __name__ == '__main__':
         if time.time() > tft.time_to_read_button:
             tft.time_to_read_button = time.time() + time_interval_button
             button_a, button_b = not tft.button_a.value, not tft.button_b.value
-            print('reading button: ' + repr(time.time()) + repr(button_a) + ' ' + repr(button_b))
 
             if button_a and button_b:
                 tft.clear()
@@ -141,7 +150,7 @@ if __name__ == '__main__':
             elif button_b:
                 tft.mode -= 1
 
-            tft.mode = tft.mode % 3
+            tft.mode %= 3
 
         print('mode ' + repr(tft.mode) + '\t' + repr(time.time()))
 
