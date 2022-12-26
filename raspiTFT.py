@@ -1,5 +1,5 @@
 import functools, os
-import time, datetime
+import time, math, datetime
 import subprocess
 import digitalio
 import board
@@ -7,6 +7,9 @@ import psutil
 from PIL import Image, ImageDraw, ImageFont
 from adafruit_rgb_display import st7789
 from adafruit_rgb_display.rgb import color565
+# import yfinance as yf
+# import pandas as pd
+# import ystockquote, stockquotes
 
 width = height = 240
 rotation = 270
@@ -17,6 +20,12 @@ backlight_pin = board.D22
 button_a_pin, button_b_pin = board.D23, board.D24
 
 relfp_image_disp = 'tmp/image_disp.jpg'
+mandelbrot_scan_params = {
+    'radius_limits': {'min': 1e-4, 'max': 1.5},
+    'radius_change_rate': 1.2,
+    'pan_vel_to_radius_ratio': (.1, 1 / math.pi),
+    'extent': (-2, -1.5, 1, 1.5)
+}
 
 
 def memfunc_decorator(min_time_inter_update, min_time_to_consume=0):
@@ -59,6 +68,12 @@ class tft_disp:
         self.time_to_read_button = time.time()
 
         self.disp_mode_fill = 0
+        self.mandelbrot_extent_params = {
+            'center': [-.5, 0],
+            'radius': 1.5,
+            'radius_rate': 1 / 1.2,
+            'pan_vel_to_radius_ratio': [.1, 1 / math.pi],
+        }
 
         spi = board.SPI() if spi is None else spi
         cs_io = digitalio.DigitalInOut(cs_pin)
@@ -82,16 +97,43 @@ class tft_disp:
     @memfunc_decorator(30)
     def clear(self):
         self.backlight.value = False
-        # image = Image.new('RGB', (self.width, self.height))
-        # draw = ImageDraw.Draw(image)
-        # draw.rectangle((0, 0, self.width, self.height), outline=0, fill=(0, 0, 0))
-        # self.disp.image(image, self.rotation)
         self.disp.fill(0)
 
-    @memfunc_decorator(30)
-    def disp_mandelbrot(self):
+    @memfunc_decorator(1)
+    def disp_mandelbrot(self, scan_params=mandelbrot_scan_params):
         self.backlight.value = True
-        image = Image.effect_mandelbrot((self.width, self.height), (-2, -1.5, 1, 1.5), 100).convert('RGBA')
+
+        extent = (
+            self.mandelbrot_extent_params['center'][0] - self.mandelbrot_extent_params['radius'],
+            self.mandelbrot_extent_params['center'][1] - self.mandelbrot_extent_params['radius'],
+            self.mandelbrot_extent_params['center'][0] + self.mandelbrot_extent_params['radius'],
+            self.mandelbrot_extent_params['center'][1] + self.mandelbrot_extent_params['radius'],
+        )
+
+        if extent[0] < scan_params['extent'][0]:
+            self.mandelbrot_extent_params['pan_vel_to_radius_ratio'][0] = scan_params['pan_vel_to_radius_ratio'][0]
+        if extent[1] < scan_params['extent'][1]:
+            self.mandelbrot_extent_params['pan_vel_to_radius_ratio'][1] = scan_params['pan_vel_to_radius_ratio'][1]
+        if extent[2] > scan_params['extent'][2]:
+            self.mandelbrot_extent_params['pan_vel_to_radius_ratio'][0] = -scan_params['pan_vel_to_radius_ratio'][0]
+        if extent[3] > scan_params['extent'][3]:
+            self.mandelbrot_extent_params['pan_vel_to_radius_ratio'][1] = -scan_params['pan_vel_to_radius_ratio'][1]
+
+        extent = [max(xy, lmt) if ix < 2 else min(xy, lmt)
+                  for ix, xy, lmt in zip(range(4), extent, scan_params['extent'])]
+
+        if self.mandelbrot_extent_params['radius'] > scan_params['radius_limits']['max']:
+            self.mandelbrot_extent_params['radius_rate'] = 1 / scan_params['radius_change_rate']
+        elif self.mandelbrot_extent_params['radius'] < scan_params['radius_limits']['min']:
+            self.mandelbrot_extent_params['radius_rate'] = scan_params['radius_change_rate']
+
+        self.mandelbrot_extent_params['radius'] *= self.mandelbrot_extent_params['radius_rate']
+        self.mandelbrot_extent_params['center'][0] += \
+            scan_params['pan_vel_to_radius_ratio'][0] * self.mandelbrot_extent_params['radius']
+        self.mandelbrot_extent_params['center'][1] += \
+            scan_params['pan_vel_to_radius_ratio'][1] * self.mandelbrot_extent_params['radius']
+
+        image = Image.effect_mandelbrot((self.width, self.height), tuple(extent), 100).convert('RGBA')
         # fp_image_disp = os.path.join(os.getcwd(), relfp_image_disp)
         # image.save(fp_image_disp)
         # image = Image.open(fp_image_disp)
@@ -106,14 +148,9 @@ class tft_disp:
         elif 1 == self.disp_mode_fill:
             self.disp.image(Image.effect_noise((self.width, self.height), 50).convert('RGBA'), self.rotation)
         elif 2 == self.disp_mode_fill:
-            self.disp.image(
-                Image.radial_gradient('L').convert('RGBA').resize((self.width, self.height), Image.BICUBIC),
-                self.rotation
-            )
+            self.disp.image(Image.radial_gradient('L').convert('RGBA').resize((self.width, self.height), Image.BICUBIC))
         elif 3 == self.disp_mode_fill:
-            self.disp.image(
-                Image.linear_gradient('L').convert('RGBA').resize((self.width, self.height), Image.BICUBIC)
-            )
+            self.disp.image(Image.linear_gradient('L').convert('RGBA').resize((self.width, self.height), Image.BICUBIC))
 
         self.disp_mode_fill += 1
         self.disp_mode_fill %= 4
@@ -142,6 +179,10 @@ class tft_disp:
         y += font.getsize(mem_stats)[1]
         draw.text((x, y), tmp_sensors, font=font, fill='#FF0000')
         self.disp.image(image, self.rotation)
+
+    # @memfunc_decorator(60)
+    # def disp_stock(self, ):
+    #     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 10)
 
 
 if __name__ == '__main__':
