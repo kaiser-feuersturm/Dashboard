@@ -104,12 +104,21 @@ class tft_disp:
         if 0 == self.disp_mode_fill:
             self.disp.fill(color565(0, 255, 255))
         elif 1 == self.disp_mode_fill:
-            self.disp.image(Image.effect_noise((self.width, self.height), 50), self.rotation)
+            self.disp.image(Image.effect_noise((self.width, self.height), 50).convert('RGBA'), self.rotation)
+        elif 2 == self.disp_mode_fill:
+            self.disp.image(
+                Image.radial_gradient('L').convert('RGBA').resize((self.width, self.height), Image.BICUBIC),
+                self.rotation
+            )
+        elif 3 == self.disp_mode_fill:
+            self.disp.image(
+                Image.linear_gradient('L').convert('RGBA').resize((self.width, self.height), Image.BICUBIC)
+            )
 
         self.disp_mode_fill += 1
-        self.disp_mode_fill %= 2
+        self.disp_mode_fill %= 4
 
-    @memfunc_decorator(3)
+    @memfunc_decorator(1)
     def disp_system_stats(self):
         date_local = time.strftime('%d%b%y')
         time_local = time.strftime(' %H:%M%p')
@@ -117,7 +126,7 @@ class tft_disp:
         mem_stats = 'Mem: {:.1f}%'.format(psutil.virtual_memory().percent)
         tmp_sensors = 'Temp: {:.1f} C'.format(psutil.sensors_temperatures()['cpu_thermal'][0].current)
 
-        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 20)
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
         self.backlight.value = True
         image = Image.new('RGB', (self.width, self.height))
         draw = ImageDraw.Draw(image)
@@ -144,19 +153,22 @@ if __name__ == '__main__':
             button_a, button_b = not tft.button_a.value, not tft.button_b.value
 
             if button_a and button_b:
-                tft.clear()
+                tft.mode = -tft.mode - 2
             elif button_a:
                 tft.mode += 1
             elif button_b:
                 tft.mode -= 1
 
-            tft.mode %= 3
+            if -1 > tft.mode:
+                tft.mode %= 3
 
         print('mode ' + repr(tft.mode) + '\t' + repr(time.time()))
 
-        if 0 == tft.mode:
+        if -1 > tft.mode:
+            tft.clear()
+        elif 0 == tft.mode:
             tft.disp_system_stats()
         elif 1 == tft.mode:
             tft.disp_mandelbrot()
         elif 2 == tft.mode:
-            tft.clear()
+            tft.disp_fill()
