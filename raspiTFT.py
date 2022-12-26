@@ -92,7 +92,7 @@ class tft_disp:
     @memfunc_decorator(30)
     def disp_mandelbrot(self):
         self.backlight.value = True
-        image = Image.effect_mandelbrot((self.width, self.height), (0, 0, self.width, self.height), 100)
+        image = Image.effect_mandelbrot((self.width, self.height), (-2, -1.5, 1, 1.5), 100)
         # fp_image_disp = os.path.join(os.getcwd(), relfp_image_disp)
         # image.save(fp_image_disp)
         # image = Image.open(fp_image_disp)
@@ -102,12 +102,12 @@ class tft_disp:
     @memfunc_decorator(3)
     def disp_system_stats(self):
         date_local = time.strftime('%d%b%y')
-        time_local = time.strftime(' %H:%M:%p')
+        time_local = time.strftime(' %H:%M%p')
         cpu_pct = 'CPU: {:.0f}%'.format(psutil.cpu_percent(interval=.2, percpu=False))
         mem_stats = 'Mem: {:.1f}%'.format(psutil.virtual_memory().percent)
         tmp_sensors = 'Temp: {:.1f} C'.format(psutil.sensors_temperatures()['cpu_thermal'][0].current)
 
-        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24)
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 20)
         self.backlight.value = True
         image = Image.new('RGB', (self.width, self.height))
         draw = ImageDraw.Draw(image)
