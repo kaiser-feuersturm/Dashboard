@@ -223,7 +223,7 @@ class tftDisp:
         to_scale = max(settings_.loc[:, 'normalize'].to_list())
 
         mktdata_ = mktdata.loc[:, tickers_]
-        lookback = self.mktdata_plot_settings.lookbacks[
+        lookback = self.mktdata_plot_settings['lookbacks'][
             self.mktdata_groupid % len(self.mktdata_plot_settings['lookbacks'])
         ]
         today = datetime.date.today()
