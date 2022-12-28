@@ -101,7 +101,7 @@ class tftDisp:
         self.mktdata = None
         self.mktdata_settings = pd.read_csv(relfp_mktdata_settings, sep=',', index_col='ticker')
         self.mktdata_groupid = 0
-        with open(filepath.get('config', relfp_mkt_data_plot_settings), 'r') as f:
+        with open(relfp_mkt_data_plot_settings, 'r') as f:
             self.mktdata_plot_settings = json.load((f))
 
         spi = board.SPI() if spi is None else spi
