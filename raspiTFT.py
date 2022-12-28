@@ -1,10 +1,9 @@
 import functools, os, json, psutil
 import time, math, datetime
-# import subprocess
 import digitalio, board
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import matplotlib.ticker as mticker
+# import matplotlib.ticker as mticker
 from PIL import Image, ImageDraw, ImageFont
 from adafruit_rgb_display import st7789
 from adafruit_rgb_display.rgb import color565
@@ -163,10 +162,6 @@ class tftDisp:
             self.mandelbrot_extent_params['pan_vel_to_radius_ratio'][1] * self.mandelbrot_extent_params['radius']
 
         image = Image.effect_mandelbrot((self.width, self.height), tuple(extent), 100).convert('RGBA')
-        # fp_image_disp = os.path.join(os.getcwd(), relfp_image_disp)
-        # image.save(fp_image_disp)
-        # image = Image.open(fp_image_disp)
-        # image = image.convert('RGBA')
         self.disp.image(image, self.rotation)
 
     @memfunc_decorator(60)
@@ -232,7 +227,7 @@ class tftDisp:
         if to_scale:
             mktdata_ = mktdata_ / mktdata_.iloc[1, :]
 
-        fig, ax = plt.subplots(figsize=(8, 8))
+        fig, ax = plt.subplots(figsize=(4, 4))
         ax.xaxis.set_major_locator(mdates.MonthLocator(bymonth=lookback['x_bymonth']))
         ax.xaxis.set_major_formatter(mdates.DateFormatter(lookback['x_dateformatter']))
         ax.grid(True, which='major')
@@ -243,6 +238,9 @@ class tftDisp:
         plt.savefig('./' + relfp_image_disp)
         fp_image_disp = os.path.join(os.getcwd(), relfp_image_disp)
         image = Image.open(fp_image_disp).convert('RGBA').resize((self.width, self.height), Image.BICUBIC)
+        draw = ImageDraw.Draw(image)
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 10)
+        draw.text((0, 0), lookback['name'], font=font, fill='#FFA500')
         self.disp.image(image, self.rotation)
 
         self.mktdata_groupid += 1

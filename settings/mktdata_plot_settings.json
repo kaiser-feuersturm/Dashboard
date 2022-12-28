@@ -2,8 +2,8 @@
   "lookbacks": [
     {
       "name": "-1y",
-      "x_bymonth": [1],
-      "x_dateformatter": "%y",
+      "x_bymonth": [1,4,7,10],
+      "x_dateformatter": "%b%y",
       "days": 365
     },
     {
