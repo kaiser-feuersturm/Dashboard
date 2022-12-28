@@ -1,0 +1,22 @@
+{
+  "lookbacks": [
+    {
+      "name": "-1y",
+      "x_bymonth": [1],
+      "x_dateformatter": "%y",
+      "days": 365
+    },
+    {
+      "name": "-5y",
+      "x_bymonth": [1],
+      "x_dateformatter": "'%y",
+      "days": 1825
+    },
+    {
+      "name": "-10y",
+      "x_bymonth": [1],
+      "x_dateformatter": "'%y",
+      "days": 3650
+    }
+  ]
+}

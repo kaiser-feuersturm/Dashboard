@@ -1,15 +1,16 @@
-import functools, os
+import functools, os, json, psutil
 import time, math, datetime
-import subprocess
-import digitalio
-import board
-import psutil
+# import subprocess
+import digitalio, board
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import matplotlib.ticker as mticker
 from PIL import Image, ImageDraw, ImageFont
 from adafruit_rgb_display import st7789
 from adafruit_rgb_display.rgb import color565
-# import yfinance as yf
-# import pandas as pd
-# import ystockquote, stockquotes
+import yfinance as yf
+import pandas as pd
+# import ystockquote, stockquotes, yahoo_fin
 
 width = height = 240
 rotation = 270
@@ -19,9 +20,13 @@ cs_pin, dc_pin = board.CE0, board.D25
 backlight_pin = board.D22
 button_a_pin, button_b_pin = board.D23, board.D24
 
-relfp_image_disp = 'tmp/image_disp.jpg'
+relfp_image_disp = 'data/image_disp.jpg'
+relfp_mkt_data_query_settings = './settings/markets_query_settings.csv'
+relfp_mkt_data_plot_settings = './settings/mktdata_plot_settings.json'
+relfp_mkt_data = './data/mkt_data.pkl'
+
 mandelbrot_scan_params = {
-    'radius_limits': {'min': 1e-4, 'max': 1.5},
+    'radius_limits': {'min': .1, 'max': 1.5},
     'radius_change_rate': 1.2,
     'pan_vel_to_radius_ratio': (.1, 1 / math.pi),
     'extent': (-2, -1.5, 1, 1.5)
@@ -52,12 +57,30 @@ def memfunc_decorator(min_time_inter_update, min_time_to_consume=0):
     return decorate_inner
 
 
-class tft_disp:
+def query_mkt_data(mktdata_settings, relfp_md=relfp_mkt_data):
+    try:
+        mktdata = pd.read_pickle(relfp_md)
+        today = datetime.date.today()
+        if mktdata.index.max().date() >= today:
+            return mktdata
+    except:
+        mktdata = pd.DataFrame()
+
+    tickers = mktdata_settings.index.to_list()
+    mktdata_ = yf.download(' '.join(tickers), period='10y', interval='1d')
+    mktdata = pd.concat([mktdata, mktdata_]).drop_duplicates()
+    mktdata.to_pickle(relfp_md)
+
+    return mktdata
+
+
+class tftDisp:
     def __init__(self, baudrate=64000000,
         width=width, height=height, rotation=rotation, x_offset=0, y_offset=80,
         cs_pin=cs_pin, dc_pin=dc_pin, reset_pin=None, backlight_pin=backlight_pin,
         button_a_pin=button_a_pin, button_b_pin=button_b_pin,
-        spi=None
+        spi=None,
+        relfp_mktdata_settings=relfp_mkt_data_query_settings
     ):
         self.mode_prev = 0
         self.mode = 0
@@ -74,6 +97,12 @@ class tft_disp:
             'radius_rate': 1 / 1.2,
             'pan_vel_to_radius_ratio': [.1, 1 / math.pi],
         }
+
+        self.mktdata = None
+        self.mktdata_settings = pd.read_csv(relfp_mktdata_settings, sep=',', index_col='ticker')
+        self.mktdata_groupid = 0
+        with open(filepath.get('config', relfp_mkt_data_plot_settings), 'r') as f:
+            self.mktdata_plot_settings = json.load((f))
 
         spi = board.SPI() if spi is None else spi
         cs_io = digitalio.DigitalInOut(cs_pin)
@@ -99,7 +128,7 @@ class tft_disp:
         self.backlight.value = False
         self.disp.fill(0)
 
-    @memfunc_decorator(1)
+    @memfunc_decorator(.25)
     def disp_mandelbrot(self, scan_params=mandelbrot_scan_params):
         self.backlight.value = True
 
@@ -180,13 +209,46 @@ class tft_disp:
         draw.text((x, y), tmp_sensors, font=font, fill='#FF0000')
         self.disp.image(image, self.rotation)
 
-    # @memfunc_decorator(60)
-    # def disp_stock(self, ):
-    #     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 10)
+    @memfunc_decorator(30)
+    def disp_markets(self):
+        if self.mktdata is None:
+            self.mktdata = query_mkt_data()
+
+        mktdata = self.mktdata.loc[:, 'Adj Close']
+
+        mktdata_groups = self.mktdata_settings.loc[:, 'group'].unique()
+        group = mktdata_groups[math.floor(self.mktdata_groupid / len(self.mktdata_plot_settings.lookbacks))]
+        settings_ = self.mktdata_settings.loc[self.mktdata_settings['group'] == group]
+        tickers_ = settings_.loc[:, 'ticker'].to_list()
+        to_scale = max(settings_.loc[:, 'normalize'].to_list())
+
+        mktdata_ = mktdata.loc[:, tickers_]
+        lookback = self.mktdata_plot_settings.lookbacks[
+            self.mktdata_groupid % len(self.mktdata_plot_settings.lookbacks)
+        ]
+        today = datetime.date.today()
+        lookback_start = today - datetime.timedelta(days=lookback['days'])
+        mktdata_ = mktdata_.loc[mktdata.index.date() >= lookback_start, :]
+        mktdata_ = mktdata_ / mktdata_.iloc[1, :]
+        fig, ax = plt.subplots(figsize=(8, 8))
+        ax.xaxis.set_major_locator(mdates.MonthLocator(bymonth=lookback['x_bymonth']))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter(lookback['x_dateformatter']))
+        ax.grid(True, which='major')
+        mktdata_.plot(grid=True, ax=ax,
+            style=settings_.loc[:, 'linestyle'].to_dict(),
+            color=settings_.loc[:, 'color'].to_dict()
+        )
+        plt.savefig('./' + relfp_image_disp)
+        fp_image_disp = os.path.join(os.getcwd(), relfp_image_disp)
+        image = Image.open(fp_image_disp).convert('RGBA').resize((self.width, self.height), Image.BICUBIC)
+        self.disp.image(image, self.rotation)
+
+        self.mktdata_groupid += 1
+        self.mktdata_groupid %= mktdata_groups.size * len(self.mktdata_plot_settings.lookbacks)
 
 
 if __name__ == '__main__':
-    tft = tft_disp()
+    tft = tftDisp()
     buffer_mode = 2
 
     while True:
@@ -214,3 +276,5 @@ if __name__ == '__main__':
             tft.disp_mandelbrot()
         elif 2 == tft.mode:
             tft.disp_fill()
+        elif 3 == tft.mode:
+            tft.disp_markets()
