@@ -228,8 +228,10 @@ class tftDisp:
         ]
         today = datetime.date.today()
         lookback_start = today - datetime.timedelta(days=lookback['days'])
-        mktdata_ = mktdata_.loc[mktdata.index.date() >= lookback_start, :]
-        mktdata_ = mktdata_ / mktdata_.iloc[1, :]
+        mktdata_ = mktdata_.loc[lookback_start:, :]
+        if to_scale:
+            mktdata_ = mktdata_ / mktdata_.iloc[1, :]
+
         fig, ax = plt.subplots(figsize=(8, 8))
         ax.xaxis.set_major_locator(mdates.MonthLocator(bymonth=lookback['x_bymonth']))
         ax.xaxis.set_major_formatter(mdates.DateFormatter(lookback['x_dateformatter']))
