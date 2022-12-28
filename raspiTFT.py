@@ -212,7 +212,7 @@ class tftDisp:
     @memfunc_decorator(30)
     def disp_markets(self):
         if self.mktdata is None:
-            self.mktdata = query_mkt_data()
+            self.mktdata = query_mkt_data(self.mktdata_settings)
 
         mktdata = self.mktdata.loc[:, 'Adj Close']
 
