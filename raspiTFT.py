@@ -1,5 +1,5 @@
 import functools, os, json, psutil
-import time, math, datetime
+import time, math, datetime, random
 import digitalio, board
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -13,7 +13,7 @@ import pandas as pd
 
 width = height = 240
 rotation = 270
-time_interval_button = .1
+time_interval_button = .2
 
 cs_pin, dc_pin = board.CE0, board.D25
 backlight_pin = board.D22
@@ -164,11 +164,15 @@ class tftDisp:
         image = Image.effect_mandelbrot((self.width, self.height), tuple(extent), 100).convert('RGBA')
         self.disp.image(image, self.rotation)
 
-    @memfunc_decorator(60)
+    @memfunc_decorator(3)
     def disp_fill(self):
         self.backlight.value = True
         if 0 == self.disp_mode_fill:
-            self.disp.fill(color565(0, 255, 255))
+            self.disp.fill(color565(
+                random.randint(0, 255),
+                random.randint(0, 255),
+                random.randint(0, 255)
+            ))
         elif 1 == self.disp_mode_fill:
             self.disp.image(Image.effect_noise((self.width, self.height), 50).convert('RGBA'), self.rotation)
         elif 2 == self.disp_mode_fill:
