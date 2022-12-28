@@ -218,7 +218,7 @@ class tftDisp:
 
         mktdata_groups = self.mktdata_settings.loc[:, 'group'].unique()
         group = mktdata_groups[math.floor(self.mktdata_groupid / len(self.mktdata_plot_settings['lookbacks']))]
-        settings_ = self.mktdata_settings.loc[self.mktdata_settings['group'] == group]
+        settings_ = self.mktdata_settings.loc[self.mktdata_settings['group'] == group, :]
         tickers_ = settings_.loc[:, 'ticker'].to_list()
         to_scale = max(settings_.loc[:, 'normalize'].to_list())
 
