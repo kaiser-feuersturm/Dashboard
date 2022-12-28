@@ -217,14 +217,14 @@ class tftDisp:
         mktdata = self.mktdata.loc[:, 'Adj Close']
 
         mktdata_groups = self.mktdata_settings.loc[:, 'group'].unique()
-        group = mktdata_groups[math.floor(self.mktdata_groupid / len(self.mktdata_plot_settings.lookbacks))]
+        group = mktdata_groups[math.floor(self.mktdata_groupid / len(self.mktdata_plot_settings['lookbacks']))]
         settings_ = self.mktdata_settings.loc[self.mktdata_settings['group'] == group]
         tickers_ = settings_.loc[:, 'ticker'].to_list()
         to_scale = max(settings_.loc[:, 'normalize'].to_list())
 
         mktdata_ = mktdata.loc[:, tickers_]
         lookback = self.mktdata_plot_settings.lookbacks[
-            self.mktdata_groupid % len(self.mktdata_plot_settings.lookbacks)
+            self.mktdata_groupid % len(self.mktdata_plot_settings['lookbacks'])
         ]
         today = datetime.date.today()
         lookback_start = today - datetime.timedelta(days=lookback['days'])
@@ -244,7 +244,7 @@ class tftDisp:
         self.disp.image(image, self.rotation)
 
         self.mktdata_groupid += 1
-        self.mktdata_groupid %= mktdata_groups.size * len(self.mktdata_plot_settings.lookbacks)
+        self.mktdata_groupid %= mktdata_groups.size * len(self.mktdata_plot_settings['lookbacks'])
 
 
 if __name__ == '__main__':
