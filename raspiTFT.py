@@ -281,8 +281,8 @@ if __name__ == '__main__':
         elif 0 == tft.mode:
             tft.disp_system_stats()
         elif 1 == tft.mode:
-            tft.disp_mandelbrot()
+            tft.disp_markets()
         elif 2 == tft.mode:
             tft.disp_fill()
         elif 3 == tft.mode:
-            tft.disp_markets()
+            tft.disp_mandelbrot()
