@@ -264,7 +264,7 @@ if __name__ == '__main__':
                 tft.mode -= 1
 
             if -buffer_mode < tft.mode:
-                tft.mode %= 3
+                tft.mode %= 4
 
         print('mode ' + repr(tft.mode) + '\t' + repr(time.time()))
 
