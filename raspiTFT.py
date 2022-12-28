@@ -244,7 +244,7 @@ class tftDisp:
         image = Image.open(fp_image_disp).convert('RGBA').resize((self.width, self.height), Image.BICUBIC)
         draw = ImageDraw.Draw(image)
         font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
-        draw.text((0, 0), lookback['name'], font=font, fill='#FFA500')
+        draw.text((0, 0), lookback['name'], font=font, fill='#2986CC')
         self.disp.image(image, self.rotation)
 
         self.mktdata_groupid += 1
@@ -270,7 +270,7 @@ if __name__ == '__main__':
             if -buffer_mode < tft.mode:
                 tft.mode %= 4
 
-        print('mode ' + repr(tft.mode) + '\t' + repr(time.time()))
+        # print('mode ' + repr(tft.mode) + '\t' + repr(time.time()))
 
         if -buffer_mode >= tft.mode:
             tft.clear()
