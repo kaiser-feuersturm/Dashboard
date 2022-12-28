@@ -13,7 +13,7 @@ import pandas as pd
 
 width = height = 240
 rotation = 270
-time_interval_button = .2
+time_interval_button = .1
 
 cs_pin, dc_pin = board.CE0, board.D25
 backlight_pin = board.D22
@@ -239,7 +239,7 @@ class tftDisp:
         fp_image_disp = os.path.join(os.getcwd(), relfp_image_disp)
         image = Image.open(fp_image_disp).convert('RGBA').resize((self.width, self.height), Image.BICUBIC)
         draw = ImageDraw.Draw(image)
-        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 10)
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
         draw.text((0, 0), lookback['name'], font=font, fill='#FFA500')
         self.disp.image(image, self.rotation)
 

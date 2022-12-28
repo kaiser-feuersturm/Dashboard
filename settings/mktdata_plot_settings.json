@@ -7,6 +7,12 @@
       "days": 365
     },
     {
+      "name": "-3y",
+      "x_bymonth": [1,7],
+      "x_dateformatter": "%b%y",
+      "days": 1095
+    },
+    {
       "name": "-5y",
       "x_bymonth": [1],
       "x_dateformatter": "'%y",
