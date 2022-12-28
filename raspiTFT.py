@@ -168,17 +168,19 @@ class tftDisp:
     def disp_fill(self):
         self.backlight.value = True
         if 0 == self.disp_mode_fill:
-            self.disp.fill(color565(
-                random.randint(0, 255),
-                random.randint(0, 255),
-                random.randint(0, 255)
-            ))
+            self.disp.fill(color565(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)))
         elif 1 == self.disp_mode_fill:
             self.disp.image(Image.effect_noise((self.width, self.height), 50).convert('RGBA'), self.rotation)
         elif 2 == self.disp_mode_fill:
-            self.disp.image(Image.radial_gradient('L').convert('RGBA').resize((self.width, self.height), Image.BICUBIC))
+            self.disp.image(Image.radial_gradient('L').convert('RGBA').resize(
+                (self.width, self.height), Image.Resampling.BICUBIC)
+            )
         elif 3 == self.disp_mode_fill:
-            self.disp.image(Image.linear_gradient('L').convert('RGBA').resize((self.width, self.height), Image.BICUBIC))
+            self.disp.image(Image.linear_gradient('L').convert('RGBA').resize(
+                (self.width, self.height), Image.Resampling.BICUBIC)
+            )
+        elif 4 == self.disp_mode_fill:
+            self.disp.image(Image.effect_mandelbrot((self.width, self.height), (-2, -1.5, 1, 1.5), 100).convert('RGBA'))
 
         self.disp_mode_fill += 1
         self.disp_mode_fill %= 4
@@ -208,7 +210,7 @@ class tftDisp:
         draw.text((x, y), tmp_sensors, font=font, fill='#FF0000')
         self.disp.image(image, self.rotation)
 
-    @memfunc_decorator(30)
+    @memfunc_decorator(15)
     def disp_markets(self):
         if self.mktdata is None:
             self.mktdata = query_mkt_data(self.mktdata_settings)
@@ -240,11 +242,13 @@ class tftDisp:
             color=settings_.loc[:, 'color'].to_dict()
         )
         plt.savefig('./' + relfp_image_disp)
+        plt.close('all')
+
         fp_image_disp = os.path.join(os.getcwd(), relfp_image_disp)
-        image = Image.open(fp_image_disp).convert('RGBA').resize((self.width, self.height), Image.BICUBIC)
+        image = Image.open(fp_image_disp).convert('RGBA').resize((self.width, self.height), Image.Resampling.BICUBIC)
         draw = ImageDraw.Draw(image)
         font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
-        draw.text((0, 0), lookback['name'], font=font, fill='#2986CC')
+        draw.text((0, 0), lookback['name'], font=font, fill='#16537E')
         self.disp.image(image, self.rotation)
 
         self.mktdata_groupid += 1
