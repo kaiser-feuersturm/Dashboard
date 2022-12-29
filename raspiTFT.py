@@ -240,15 +240,21 @@ class RaspiTftDisplay:
             color=settings_.loc[:, 'color'].to_dict()
         )
 
-        plt.savefig(self.filepath_image_disp)
+        # plt.savefig(self.filepath_image_disp)
+        # plt.close('all')
+        #
+        # image = Image.open(self.filepath_image_disp).convert('RGBA').resize(
+        #     (self.width, self.height), Image.Resampling.BICUBIC
+        # )
+        image = Image.frombytes('RGBA', fig.canvas.get_width_height(), fig.canvas.tostring_rbg())
         plt.close('all')
 
-        image = Image.open(self.filepath_image_disp).convert('RGBA').resize(
-            (self.width, self.height), Image.Resampling.BICUBIC
-        )
+        # x = y = 0
         draw = ImageDraw.Draw(image)
         font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
         draw.text((0, 0), lookback['name'], font=font, fill='#16537E')
+        # x += font.getsize()
+
         self.disp.image(image, self.rotation)
 
         self.mktdata_groupid += 1
