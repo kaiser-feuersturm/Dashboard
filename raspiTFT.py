@@ -11,21 +11,6 @@ import yfinance as yf
 import pandas as pd
 # import ystockquote, stockquotes, yahoo_fin
 
-width = height = 240
-rotation = 180
-time_interval_button = .2
-
-cs_pin, dc_pin = board.CE0, board.D25
-backlight_pin = board.D22
-button_a_pin, button_b_pin = board.D23, board.D24
-
-mandelbrot_scan_params = {
-    'radius_limits': {'min': .1, 'max': 1.5},
-    'radius_change_rate': 1.2,
-    'pan_vel_to_radius_ratio': (.1, 1 / math.pi),
-    'extent': (-2, -1.5, 1, 1.5)
-}
-
 
 def memfunc_decorator(min_time_inter_update, min_time_to_consume=0):
     def decorate_inner(func):
@@ -51,7 +36,7 @@ def memfunc_decorator(min_time_inter_update, min_time_to_consume=0):
     return decorate_inner
 
 
-def query_mkt_data(mktdata_settings, filepath_mktdata):
+def query_mkt_data(mktdata_settings, filepath_mktdata, cols_filter=None):
     try:
         mktdata = pd.read_pickle(filepath_mktdata)
         today = datetime.date.today()
@@ -65,7 +50,8 @@ def query_mkt_data(mktdata_settings, filepath_mktdata):
     mktdata = pd.concat([mktdata, mktdata_]).drop_duplicates()
     mktdata.to_pickle(filepath_mktdata)
 
-    return mktdata
+    retval = mktdata if cols_filter is None else mktdata.loc[:, cols_filter]
+    return retval
 
 
 def filepath_from_relfp(relfp):
@@ -73,12 +59,12 @@ def filepath_from_relfp(relfp):
     return os.path.join(dir_file, relfp)
 
 
-class RPiTftDisplay:
+class RaspiTftDisplay:
     def __init__(
         self, baudrate=64000000,
-        width=width, height=height, rotation=rotation, x_offset=0, y_offset=80,
-        cs_pin=cs_pin, dc_pin=dc_pin, reset_pin=None, backlight_pin=backlight_pin,
-        button_a_pin=button_a_pin, button_b_pin=button_b_pin,
+        width=240, height=240, rotation=0, x_offset=0, y_offset=80,
+        cs_pin=None, dc_pin=None, reset_pin=None, backlight_pin=None,
+        button_a_pin=None, button_b_pin=None,
         spi=None,
         relfp_mktdata_query_settings=None,
         relfp_mktdata_plot_settings=None,
@@ -137,7 +123,7 @@ class RPiTftDisplay:
         self.disp.fill(0)
 
     @memfunc_decorator(.25)
-    def disp_mandelbrot(self, scan_params=mandelbrot_scan_params):
+    def disp_mandelbrot(self, scan_params=None):
         self.backlight.value = True
 
         extent = (
@@ -222,9 +208,7 @@ class RPiTftDisplay:
     @memfunc_decorator(15)
     def disp_markets(self):
         if self.mktdata is None:
-            self.mktdata = query_mkt_data(self.mktdata_settings, self.filepath_mktdata)
-
-        mktdata = self.mktdata.loc[:, 'Adj Close']
+            self.mktdata = query_mkt_data(self.mktdata_settings, self.filepath_mktdata, cols_filter='Adj Close')
 
         mktdata_groups = self.mktdata_settings.loc[:, 'group'].unique()
         group = mktdata_groups[math.floor(self.mktdata_groupid / len(self.mktdata_plot_settings['lookbacks']))]
@@ -232,7 +216,7 @@ class RPiTftDisplay:
         tickers_ = settings_.index.to_list()
         to_scale = max(settings_.loc[:, 'normalize'].to_list())
 
-        mktdata_ = mktdata.loc[:, tickers_]
+        mktdata_ = self.mktdata.loc[:, tickers_]
         lookback = self.mktdata_plot_settings['lookbacks'][
             self.mktdata_groupid % len(self.mktdata_plot_settings['lookbacks'])
         ]
@@ -255,7 +239,9 @@ class RPiTftDisplay:
         plt.savefig(self.filepath_image_disp)
         plt.close('all')
 
-        image = Image.open(self.filepath_image_disp).convert('RGBA').resize((self.width, self.height), Image.Resampling.BICUBIC)
+        image = Image.open(self.filepath_image_disp).convert('RGBA').resize(
+            (self.width, self.height), Image.Resampling.BICUBIC
+        )
         draw = ImageDraw.Draw(image)
         font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
         draw.text((0, 0), lookback['name'], font=font, fill='#16537E')
@@ -271,7 +257,26 @@ if __name__ == '__main__':
     relfp_mkt_data = 'data/mkt_data.pkl'
     relfp_image_disp = 'data/image_disp.jpg'
 
-    tft = RPiTftDisplay(
+    width = height = 240
+    rotation = 180
+    time_interval_button = .2
+
+    cs_pin, dc_pin = board.CE0, board.D25
+    backlight_pin = board.D22
+    button_a_pin, button_b_pin = board.D23, board.D24
+
+    mandelbrot_scan_params = {
+        'radius_limits': {'min': .1, 'max': 1.5},
+        'radius_change_rate': 1.2,
+        'pan_vel_to_radius_ratio': (.1, 1 / math.pi),
+        'extent': (-2, -1.5, 1, 1.5)
+    }
+
+    tft = RaspiTftDisplay(
+        baudrate=64000000,
+        width=width, height=height, rotation=rotation, x_offset=0, y_offset=80,
+        cs_pin=cs_pin, dc_pin=dc_pin, reset_pin=None, backlight_pin=backlight_pin,
+        button_a_pin=button_a_pin, button_b_pin=button_b_pin,
         relfp_mktdata_query_settings=relfp_mkt_data_query_settings,
         relfp_mktdata_plot_settings=relfp_mkt_data_plot_settings,
         relfp_mktdata=relfp_mkt_data,
@@ -305,4 +310,4 @@ if __name__ == '__main__':
         elif 2 == tft.mode:
             tft.disp_fill()
         elif 3 == tft.mode:
-            tft.disp_mandelbrot()
+            tft.disp_mandelbrot(scan_params=mandelbrot_scan_params)

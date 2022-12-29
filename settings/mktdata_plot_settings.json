@@ -1,25 +1,19 @@
 {
   "lookbacks": [
     {
-      "name": "-3m",
+      "name": "3m",
       "x_bymonth": [1,2,3,4,5,6,7,8,9,10,11,12],
       "x_dateformatter": "%b",
       "days": 90
     },
     {
-      "name": "-1y",
+      "name": "1y",
       "x_bymonth": [1,4,7,10],
       "x_dateformatter": "%b%y",
       "days": 365
     },
     {
-      "name": "-5y",
-      "x_bymonth": [1],
-      "x_dateformatter": "'%y",
-      "days": 1825
-    },
-    {
-      "name": "-10y",
+      "name": "10y",
       "x_bymonth": [1],
       "x_dateformatter": "'%y",
       "days": 3650
