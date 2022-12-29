@@ -49,7 +49,7 @@ def query_mkt_data(mktdata_settings, filepath_mktdata, cols_filter=None):
     if to_download:
         tickers = mktdata_settings.index.to_list()
         mktdata_ = yf.download(' '.join(tickers), period='10y', interval='1d')
-        mktdata = pd.concat([mktdata, mktdata_]).drop_duplicates()
+        mktdata = pd.concat([mktdata, mktdata_]).drop_duplicates().sort_index()
         mktdata.to_pickle(filepath_mktdata)
 
     retval = mktdata if cols_filter is None else mktdata.loc[:, cols_filter]
