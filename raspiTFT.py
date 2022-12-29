@@ -37,18 +37,20 @@ def memfunc_decorator(min_time_inter_update, min_time_to_consume=0):
 
 
 def query_mkt_data(mktdata_settings, filepath_mktdata, cols_filter=None):
+    to_download = True
     try:
         mktdata = pd.read_pickle(filepath_mktdata)
         today = datetime.date.today()
-        if mktdata.index.max().date() >= today:
-            return mktdata
+        if mktdata.index.max().date() >= today or time.time() - os.path.getmtime(filepath_mktdata) < 7200:
+            to_download = False
     except:
         mktdata = pd.DataFrame()
 
-    tickers = mktdata_settings.index.to_list()
-    mktdata_ = yf.download(' '.join(tickers), period='10y', interval='1d')
-    mktdata = pd.concat([mktdata, mktdata_]).drop_duplicates()
-    mktdata.to_pickle(filepath_mktdata)
+    if to_download:
+        tickers = mktdata_settings.index.to_list()
+        mktdata_ = yf.download(' '.join(tickers), period='10y', interval='1d')
+        mktdata = pd.concat([mktdata, mktdata_]).drop_duplicates()
+        mktdata.to_pickle(filepath_mktdata)
 
     retval = mktdata if cols_filter is None else mktdata.loc[:, cols_filter]
     return retval

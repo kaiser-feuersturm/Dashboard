@@ -7,10 +7,10 @@
       "days": 90
     },
     {
-      "name": "1y",
+      "name": "2y",
       "x_bymonth": [1,4,7,10],
       "x_dateformatter": "%b%y",
-      "days": 365
+      "days": 730
     },
     {
       "name": "10y",
