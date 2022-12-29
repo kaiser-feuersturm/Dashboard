@@ -247,7 +247,7 @@ class RaspiTftDisplay:
         #     (self.width, self.height), Image.Resampling.BICUBIC
         # )
         fig.canvas.draw()
-        image = Image.frombytes('RGBA', fig.canvas.get_width_height(), fig.canvas.tostring_rgb())
+        image = Image.frombytes('RGB', fig.canvas.get_width_height(), fig.canvas.tostring_rgb())
         plt.close('all')
 
         # x = y = 0
