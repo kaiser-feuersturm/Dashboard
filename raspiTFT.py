@@ -187,7 +187,7 @@ class RaspiTftDisplay:
     @memfunc_decorator(1)
     def disp_system_stats(self):
         date_local = time.strftime('%d%b%y')
-        time_local = time.strftime(' %H:%M%p')
+        time_local = time.strftime('   %H:%M%p')
         cpu_pct = 'CPU: {:.0f}%'.format(psutil.cpu_percent(interval=.2, percpu=False))
         mem_stats = 'Mem: {:.1f}%'.format(psutil.virtual_memory().percent)
         tmp_sensors = 'Temp: {:.1f} C'.format(psutil.sensors_temperatures()['cpu_thermal'][0].current)
@@ -240,23 +240,19 @@ class RaspiTftDisplay:
             color=settings_.loc[:, 'color'].to_dict()
         )
 
-        # plt.savefig(self.filepath_image_disp)
-        # plt.close('all')
-        #
-        # image = Image.open(self.filepath_image_disp).convert('RGBA').resize(
-        #     (self.width, self.height), Image.Resampling.BICUBIC
-        # )
         fig.canvas.draw()
         image = Image.frombytes('RGB', fig.canvas.get_width_height(), fig.canvas.tostring_rgb()).resize(
             (self.width, self.height), Image.Resampling.BICUBIC
         )
         plt.close('all')
 
-        # x = y = 0
+        x = 0
         draw = ImageDraw.Draw(image)
         font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
         draw.text((0, 0), lookback['name'], font=font, fill='#16537E')
-        # x += font.getsize()
+        if to_scale:
+            x += font.getsize(lookback['name'] + '   ')[0]
+            draw.text((x, 0), 'scaled', font=font, fill='#FF00FF')
 
         self.disp.image(image, self.rotation)
 
