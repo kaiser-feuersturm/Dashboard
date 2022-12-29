@@ -12,17 +12,12 @@ import pandas as pd
 # import ystockquote, stockquotes, yahoo_fin
 
 width = height = 240
-rotation = 270
+rotation = 180
 time_interval_button = .2
 
 cs_pin, dc_pin = board.CE0, board.D25
 backlight_pin = board.D22
 button_a_pin, button_b_pin = board.D23, board.D24
-
-relfp_image_disp = 'data/image_disp.jpg'
-relfp_mkt_data_query_settings = './settings/markets_query_settings.csv'
-relfp_mkt_data_plot_settings = './settings/mktdata_plot_settings.json'
-relfp_mkt_data = './data/mkt_data.pkl'
 
 mandelbrot_scan_params = {
     'radius_limits': {'min': .1, 'max': 1.5},
@@ -56,9 +51,9 @@ def memfunc_decorator(min_time_inter_update, min_time_to_consume=0):
     return decorate_inner
 
 
-def query_mkt_data(mktdata_settings, relfp_md=relfp_mkt_data):
+def query_mkt_data(mktdata_settings, filepath_mktdata):
     try:
-        mktdata = pd.read_pickle(relfp_md)
+        mktdata = pd.read_pickle(filepath_mktdata)
         today = datetime.date.today()
         if mktdata.index.max().date() >= today:
             return mktdata
@@ -68,18 +63,22 @@ def query_mkt_data(mktdata_settings, relfp_md=relfp_mkt_data):
     tickers = mktdata_settings.index.to_list()
     mktdata_ = yf.download(' '.join(tickers), period='10y', interval='1d')
     mktdata = pd.concat([mktdata, mktdata_]).drop_duplicates()
-    mktdata.to_pickle(relfp_md)
+    mktdata.to_pickle(filepath_mktdata)
 
     return mktdata
 
 
-class tftDisp:
-    def __init__(self, baudrate=64000000,
+class RPiTftDisplay:
+    def __init__(
+        self, baudrate=64000000,
         width=width, height=height, rotation=rotation, x_offset=0, y_offset=80,
         cs_pin=cs_pin, dc_pin=dc_pin, reset_pin=None, backlight_pin=backlight_pin,
         button_a_pin=button_a_pin, button_b_pin=button_b_pin,
         spi=None,
-        relfp_mktdata_settings=relfp_mkt_data_query_settings
+        relfp_mktdata_query_settings=None,
+        relfp_mktdata_plot_settings=None,
+        relfp_mktdata=None,
+        relfp_image_disp=None
     ):
         self.mode_prev = 0
         self.mode = 0
@@ -98,10 +97,15 @@ class tftDisp:
         }
 
         self.mktdata = None
-        self.mktdata_settings = pd.read_csv(relfp_mktdata_settings, sep=',', index_col='ticker')
+        self.filepath_mktdata = os.path.join(os.getcwd(), relfp_mktdata)
+        self.filepath_image_disp = os.path.join(os.getcwd(), relfp_image_disp)
+        self.mktdata_settings = pd.read_csv(
+            os.path.join(os.getcwd(), relfp_mktdata_query_settings),
+            sep=',', index_col='ticker'
+        )
         self.mktdata_groupid = 0
-        with open(relfp_mkt_data_plot_settings, 'r') as f:
-            self.mktdata_plot_settings = json.load((f))
+        with open(os.path.join(os.getcwd(), relfp_mktdata_plot_settings), 'r') as f:
+            self.mktdata_plot_settings = json.load(f)
 
         spi = board.SPI() if spi is None else spi
         cs_io = digitalio.DigitalInOut(cs_pin)
@@ -213,7 +217,7 @@ class tftDisp:
     @memfunc_decorator(15)
     def disp_markets(self):
         if self.mktdata is None:
-            self.mktdata = query_mkt_data(self.mktdata_settings)
+            self.mktdata = query_mkt_data(self.mktdata_settings, self.filepath_mktdata)
 
         mktdata = self.mktdata.loc[:, 'Adj Close']
 
@@ -237,15 +241,16 @@ class tftDisp:
         ax.xaxis.set_major_locator(mdates.MonthLocator(bymonth=lookback['x_bymonth']))
         ax.xaxis.set_major_formatter(mdates.DateFormatter(lookback['x_dateformatter']))
         ax.grid(True, which='major')
-        mktdata_.plot(grid=True, ax=ax,
+        mktdata_.plot(
+            grid=True, ax=ax,
             style=settings_.loc[:, 'linestyle'].to_dict(),
             color=settings_.loc[:, 'color'].to_dict()
         )
-        plt.savefig('./' + relfp_image_disp)
+
+        plt.savefig(self.filepath_image_disp)
         plt.close('all')
 
-        fp_image_disp = os.path.join(os.getcwd(), relfp_image_disp)
-        image = Image.open(fp_image_disp).convert('RGBA').resize((self.width, self.height), Image.Resampling.BICUBIC)
+        image = Image.open(self.filepath_image_disp).convert('RGBA').resize((self.width, self.height), Image.Resampling.BICUBIC)
         draw = ImageDraw.Draw(image)
         font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
         draw.text((0, 0), lookback['name'], font=font, fill='#16537E')
@@ -256,7 +261,17 @@ class tftDisp:
 
 
 if __name__ == '__main__':
-    tft = tftDisp()
+    relfp_mkt_data_query_settings = 'settings/markets_query_settings.csv'
+    relfp_mkt_data_plot_settings = 'settings/mktdata_plot_settings.json'
+    relfp_mkt_data = 'data/mkt_data.pkl'
+    relfp_image_disp = 'data/image_disp.jpg'
+
+    tft = RPiTftDisplay(
+        relfp_mktdata_query_settings=relfp_mkt_data_query_settings,
+        relfp_mktdata_plot_settings=relfp_mkt_data_plot_settings,
+        relfp_mktdata=relfp_mkt_data,
+        relfp_image_disp=relfp_image_disp
+    )
     buffer_mode = 2
 
     while True:
