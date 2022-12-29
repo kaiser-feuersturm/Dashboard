@@ -68,6 +68,11 @@ def query_mkt_data(mktdata_settings, filepath_mktdata):
     return mktdata
 
 
+def filepath_from_relfp(relfp):
+    dir_file = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(dir_file, relfp)
+
+
 class RPiTftDisplay:
     def __init__(
         self, baudrate=64000000,
@@ -97,14 +102,14 @@ class RPiTftDisplay:
         }
 
         self.mktdata = None
-        self.filepath_mktdata = os.path.join(os.getcwd(), relfp_mktdata)
-        self.filepath_image_disp = os.path.join(os.getcwd(), relfp_image_disp)
+        self.filepath_mktdata = filepath_from_relfp(relfp_mktdata)
+        self.filepath_image_disp = filepath_from_relfp(relfp_image_disp)
         self.mktdata_settings = pd.read_csv(
-            os.path.join(os.getcwd(), relfp_mktdata_query_settings),
+            filepath_from_relfp(relfp_mktdata_query_settings),
             sep=',', index_col='ticker'
         )
         self.mktdata_groupid = 0
-        with open(os.path.join(os.getcwd(), relfp_mktdata_plot_settings), 'r') as f:
+        with open(filepath_from_relfp(relfp_mktdata_plot_settings), 'r') as f:
             self.mktdata_plot_settings = json.load(f)
 
         spi = board.SPI() if spi is None else spi
