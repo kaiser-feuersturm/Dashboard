@@ -1,4 +1,4 @@
-import functools, os, json, psutil
+import functools, os, json, psutil, calendar
 import time, math, datetime, random
 import digitalio, board
 import matplotlib.pyplot as plt
@@ -10,6 +10,8 @@ from adafruit_rgb_display.rgb import color565
 import yfinance as yf
 import pandas as pd
 # import ystockquote, stockquotes, yahoo_fin
+
+calendar.setfirstweekday(calendar.SUNDAY)
 
 
 def memfunc_decorator(min_time_inter_update, min_time_to_consume=0):
@@ -61,6 +63,27 @@ def query_mkt_data(mktdata_settings, filepath_mktdata, cols_filter=None):
 def filepath_from_relfp(relfp):
     dir_file = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(dir_file, relfp)
+
+
+def pil_draw_text_calendar(draw, xy, size, font, consistent_sizing=True,
+                           color_weekend='#FF0000', color_weekday='#FFFFFF',
+                           align_to_right=True):
+    date_today = datetime.date.today()
+    cal_matrix = calendar.monthcalendar(date_today.year, date_today.month)
+    str_matrix = [[calendar.TextCalendar.formatweekday(None, (ix - 1) % 7, 2) for ix in range(7)]]
+    str_matrix += [['{}'.format(d) if d > 0 else '' for d in w] for w in cal_matrix]
+    x, y = xy
+    x_size, y_size = size
+    x_size /= 7
+    y_size /= 6 if consistent_sizing else len(str_matrix)
+    for iw, w in enumerate(str_matrix):
+        for id, d in enumerate(w):
+            x_offset = x_size - font.getsize(d)[0] if align_to_right else 0
+            draw.text(
+                (x + id * x_size + x_offset, y + y_size * iw),
+                calendar.TextCalendar.formatweekday(None, (ix - 1) % 7, 2),
+                font=font, fill=color_weekend if ix < 1 or ix > 5 else color_weekday
+            )
 
 
 class RaspiTftDisplay:
@@ -207,6 +230,8 @@ class RaspiTftDisplay:
         draw.text((x, y), mem_stats, font=font, fill='#00FF00')
         y += font.getsize(mem_stats)[1]
         draw.text((x, y), tmp_sensors, font=font, fill='#FF0000')
+        y += font.getsize(tmp_sensors)[1]
+        pil_draw_text_calendar(draw, (10, y), (self.width - 10, 80), font=font)
         self.disp.image(image, self.rotation)
 
     @memfunc_decorator(15)
