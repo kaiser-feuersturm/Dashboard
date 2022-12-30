@@ -231,8 +231,9 @@ class RaspiTftDisplay:
         y += font.getsize(mem_stats)[1]
         draw.text((x, y), tmp_sensors, font=font, fill='#FF0000')
         y += font.getsize(tmp_sensors)[1]
-        pil_draw_text_calendar(draw, (50, y), (self.width - 50, 80),
-                               font=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 10))
+        margin_cal = 20
+        pil_draw_text_calendar(draw, (margin_cal, y), (self.width - 2 * margin_cal, 80),
+                               font=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 11))
         self.disp.image(image, self.rotation)
 
     @memfunc_decorator(15)
