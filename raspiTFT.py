@@ -101,10 +101,10 @@ def pil_draw_text_sys_stats(draw, xy, font):
     tmp_sensors = 'Temp: {:.1f} C'.format(psutil.sensors_temperatures()['cpu_thermal'][0].current)
 
     x_max, y = xy
-    for str_, fill_ in [
-        (cpu_pct, mem_stats, tmp_sensors),
-        ('#FFFF00', '#00FF00', '#FF0000')
-    ]:
+    for str_, fill_ in zip(
+        [cpu_pct, mem_stats, tmp_sensors],
+        ['#FFFF00', '#00FF00', '#FF0000']
+    ):
         draw.text((x, y), str_, font=font, fill=fill_)
         bbox = font.getbbox(str_)
         x_max = max(x_max, bbox[2])
