@@ -93,6 +93,24 @@ def pil_draw_text_calendar(draw, xy, size, font, consistent_sizing=True,
 
             draw.text((x_, y_), d, font=font, fill=color_weekend if id < 1 or id > 5 else color_weekday)
 
+    return (x + x_size, y + y_size)
+
+def pil_draw_text_sys_stats(draw, xy, font):
+    cpu_pct = 'CPU: {:.0f}%'.format(psutil.cpu_percent(interval=.2, percpu=False))
+    mem_stats = 'Mem: {:.1f}%'.format(psutil.virtual_memory().percent)
+    tmp_sensors = 'Temp: {:.1f} C'.format(psutil.sensors_temperatures()['cpu_thermal'][0].current)
+
+    x_max, y = xy
+    for str_, fill_ in [
+        (cpu_pct, mem_stats, tmp_sensors),
+        ('#FFFF00', '#00FF00', '#FF0000')
+    ]:
+        draw.text((x, y), str_, font=font, fill=fill_)
+        bbox = font.getbbox(str_)
+        x_max = max(x_max, bbox[2])
+        y += bbox[3]
+
+    return (x_max, y)
 
 class RaspiTftDisplay:
     def __init__(
@@ -219,9 +237,6 @@ class RaspiTftDisplay:
     def disp_system_stats(self):
         date_local = time.strftime('%d%b%y')
         time_local = time.strftime('   %H:%M%p')
-        cpu_pct = 'CPU: {:.0f}%'.format(psutil.cpu_percent(interval=.2, percpu=False))
-        mem_stats = 'Mem: {:.1f}%'.format(psutil.virtual_memory().percent)
-        tmp_sensors = 'Temp: {:.1f} C'.format(psutil.sensors_temperatures()['cpu_thermal'][0].current)
 
         font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 16)
         self.backlight.value = True
@@ -231,18 +246,13 @@ class RaspiTftDisplay:
         draw.text((x, y), date_local, font=font, fill='#FFFFFF')
         x += font.getsize(date_local)[0]
         draw.text((x, y), time_local, font=font, fill='#00FFFF')
-        x = 0
         y += font.getsize(time_local)[1]
-        draw.text((x, y), cpu_pct, font=font, fill='#FFFF00')
-        y += font.getsize(cpu_pct)[1]
-        draw.text((x, y), mem_stats, font=font, fill='#00FF00')
-        y += font.getsize(mem_stats)[1]
-        draw.text((x, y), tmp_sensors, font=font, fill='#FF0000')
-        y += font.getsize(tmp_sensors)[1]
+
         margin_cal = 20
-        pil_draw_text_calendar(draw, (margin_cal, y + 5), (self.width - 2 * margin_cal, 80),
+        xy_ = pil_draw_text_calendar(draw, (margin_cal, y + 5), (self.width - 2 * margin_cal, 80),
                                font=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 11),
-                               mark_today={})
+                               mark_today={'fill': '#FFFF00'})
+        pil_draw_text_sys_stats(draw, (0, xy_[1] + 10), font)
         self.disp.image(image, self.rotation)
 
     @memfunc_decorator(15)
