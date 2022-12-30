@@ -93,7 +93,7 @@ def pil_draw_text_calendar(draw, xy, size, font, consistent_sizing=True,
 
             draw.text((x_, y_), d, font=font, fill=color_weekend if id < 1 or id > 5 else color_weekday)
 
-    return (x + x_size, y + y_size)
+    return (x + size[0], y + size[1])
 
 def pil_draw_text_sys_stats(draw, xy, font):
     cpu_pct = 'CPU: {:.0f}%'.format(psutil.cpu_percent(interval=.2, percpu=False))
@@ -252,7 +252,7 @@ class RaspiTftDisplay:
         margin_cal = 20
         xy_ = pil_draw_text_calendar(draw, (margin_cal, y + 5), (self.width - 2 * margin_cal, 80),
                                font=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 11),
-                               mark_today={'fill': '#FFFF00'})
+                               mark_today={'outline': '#FFFF00'})
         pil_draw_text_sys_stats(draw, (0, xy_[1] + 10), font)
         self.disp.image(image, self.rotation)
 
