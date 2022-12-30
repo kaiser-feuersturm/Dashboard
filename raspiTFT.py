@@ -81,8 +81,8 @@ def pil_draw_text_calendar(draw, xy, size, font, consistent_sizing=True,
             x_offset = x_size - font.getsize(d)[0] if align_to_right else 0
             draw.text(
                 (x + id * x_size + x_offset, y + y_size * iw),
-                calendar.TextCalendar.formatweekday(None, (ix - 1) % 7, 2),
-                font=font, fill=color_weekend if ix < 1 or ix > 5 else color_weekday
+                calendar.TextCalendar.formatweekday(None, (id - 1) % 7, 2),
+                font=font, fill=color_weekend if id < 1 or id > 5 else color_weekday
             )
 
 
