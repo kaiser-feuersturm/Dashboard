@@ -67,8 +67,9 @@ def filepath_from_relfp(relfp):
 
 def pil_draw_text_calendar(draw, xy, size, font, consistent_sizing=True,
                            color_weekend='#FF0000', color_weekday='#FFFFFF',
-                           align_to_right=True):
+                           align_to_right=True, mark_today=None):
     date_today = datetime.date.today()
+    str_cmp = '{}'.format(date_today.day) if mark_today is not None else '__wtf__'
     cal_matrix = calendar.monthcalendar(date_today.year, date_today.month)
     str_matrix = [[calendar.TextCalendar.formatweekday(None, (ix - 1) % 7, 2) for ix in range(7)]]
     str_matrix += [['{}'.format(d) if d > 0 else '' for d in w] for w in cal_matrix]
@@ -79,11 +80,18 @@ def pil_draw_text_calendar(draw, xy, size, font, consistent_sizing=True,
     for iw, w in enumerate(str_matrix):
         for id, d in enumerate(w):
             x_offset = x_size - font.getsize(d)[0] if align_to_right else 0
-            draw.text(
-                (x + id * x_size + x_offset, y + y_size * iw),
-                d,
-                font=font, fill=color_weekend if id < 1 or id > 5 else color_weekday
-            )
+            x_, y_ = x + id * x_size + x_offset, y + y_size * iw
+
+            if d == str_cmp:
+                bbox = font.getbbox(d)
+                mg = mark_today.get('margin', 2)
+                draw.rectangle(
+                    [x_ + bbox[0] - mg, y_ + bbox[1] - mg, x_ + bbox[2] + mg, y_ + bbox[3] + mg],
+                    outline=mark_today.get('outline', '#00FFFF'),
+                    fill=mark_today.get('fill', None), width=mark_today.get('width', 1)
+                )
+
+            draw.text((x_, y_), d, font=font, fill=color_weekend if id < 1 or id > 5 else color_weekday)
 
 
 class RaspiTftDisplay:
@@ -232,8 +240,9 @@ class RaspiTftDisplay:
         draw.text((x, y), tmp_sensors, font=font, fill='#FF0000')
         y += font.getsize(tmp_sensors)[1]
         margin_cal = 20
-        pil_draw_text_calendar(draw, (margin_cal, y), (self.width - 2 * margin_cal, 80),
-                               font=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 11))
+        pil_draw_text_calendar(draw, (margin_cal, y + 5), (self.width - 2 * margin_cal, 80),
+                               font=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 11),
+                               mark_today={})
         self.disp.image(image, self.rotation)
 
     @memfunc_decorator(15)
