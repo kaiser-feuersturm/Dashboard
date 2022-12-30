@@ -79,7 +79,7 @@ def pil_draw_text_calendar(draw, xy, size, font, consistent_sizing=True,
     y_size /= 6 if consistent_sizing else len(str_matrix)
     for iw, w in enumerate(str_matrix):
         for id, d in enumerate(w):
-            x_offset = x_size - font.getsize(d)[0] if align_to_right else 0
+            x_offset = x_size - font.getbbox(d)[2] if align_to_right else 0
             x_, y_ = x + id * x_size + x_offset, y + y_size * iw
 
             if d == str_cmp:
@@ -245,9 +245,9 @@ class RaspiTftDisplay:
         draw = ImageDraw.Draw(image)
         x = y = 0
         draw.text((x, y), date_local, font=font, fill='#FFFFFF')
-        x += font.getsize(date_local)[0]
+        x += font.getbbox(date_local)[2]
         draw.text((x, y), time_local, font=font, fill='#00FFFF')
-        y += font.getsize(time_local)[1]
+        y += font.getbbox(time_local)[3]
 
         margin_cal = 20
         xy_ = pil_draw_text_calendar(draw, (margin_cal, y + 5), (self.width - 2 * margin_cal, 80),
@@ -298,7 +298,7 @@ class RaspiTftDisplay:
         font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
         draw.text((0, 0), lookback['name'], font=font, fill='#16537E')
         if to_scale:
-            x += font.getsize(lookback['name'] + '   ')[0]
+            x += font.getbbox(lookback['name'] + '   ')[2]
             draw.text((x, 0), 'scaled', font=font, fill='#FF00FF')
 
         self.disp.image(image, self.rotation)
