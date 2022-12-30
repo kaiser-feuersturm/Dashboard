@@ -100,7 +100,8 @@ def pil_draw_text_sys_stats(draw, xy, font):
     mem_stats = 'Mem: {:.1f}%'.format(psutil.virtual_memory().percent)
     tmp_sensors = 'Temp: {:.1f} C'.format(psutil.sensors_temperatures()['cpu_thermal'][0].current)
 
-    x_max, y = xy
+    x, y = xy
+    x_max = x
     for str_, fill_ in zip(
         [cpu_pct, mem_stats, tmp_sensors],
         ['#FFFF00', '#00FF00', '#FF0000']
