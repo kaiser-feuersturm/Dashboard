@@ -81,7 +81,7 @@ def pil_draw_text_calendar(draw, xy, size, font, consistent_sizing=True,
             x_offset = x_size - font.getsize(d)[0] if align_to_right else 0
             draw.text(
                 (x + id * x_size + x_offset, y + y_size * iw),
-                calendar.TextCalendar.formatweekday(None, (id - 1) % 7, 2),
+                d,
                 font=font, fill=color_weekend if id < 1 or id > 5 else color_weekday
             )
 
@@ -215,7 +215,7 @@ class RaspiTftDisplay:
         mem_stats = 'Mem: {:.1f}%'.format(psutil.virtual_memory().percent)
         tmp_sensors = 'Temp: {:.1f} C'.format(psutil.sensors_temperatures()['cpu_thermal'][0].current)
 
-        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
+        font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 16)
         self.backlight.value = True
         image = Image.new('RGB', (self.width, self.height))
         draw = ImageDraw.Draw(image)
@@ -231,7 +231,8 @@ class RaspiTftDisplay:
         y += font.getsize(mem_stats)[1]
         draw.text((x, y), tmp_sensors, font=font, fill='#FF0000')
         y += font.getsize(tmp_sensors)[1]
-        pil_draw_text_calendar(draw, (10, y), (self.width - 10, 80), font=font)
+        pil_draw_text_calendar(draw, (50, y), (self.width - 50, 80),
+                               font=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 10))
         self.disp.image(image, self.rotation)
 
     @memfunc_decorator(15)
