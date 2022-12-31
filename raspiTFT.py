@@ -174,7 +174,7 @@ class RaspiTftDisplay:
     @memfunc_decorator(30)
     def clear(self):
         if self.backlight.value:
-            self.disp_fill(0)
+            self.disp.fill(0)
             self.backlight.value = False
         else:
             pass
