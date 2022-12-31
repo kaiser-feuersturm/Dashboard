@@ -95,7 +95,7 @@ def pil_draw_text_calendar(draw, xy, size, font, consistent_sizing=True,
 
     return (x + size[0], y + size[1])
 
-def pil_draw_text_sys_stats(draw, xy, font):
+def pil_draw_text_sys_stats(draw, xy, font, align_segments=True):
     cpu_pct = 'CPU: {:.0f}%'.format(psutil.cpu_percent(interval=.2, percpu=False))
     mem_stats = 'Mem: {:.1f}%'.format(psutil.virtual_memory().percent)
     tmp_sensors = 'Temp: {:.1f} C'.format(psutil.sensors_temperatures()['cpu_thermal'][0].current)
@@ -123,7 +123,7 @@ class RaspiTftDisplay:
         relfp_mktdata_query_settings=None,
         relfp_mktdata_plot_settings=None,
         relfp_mktdata=None,
-        relfp_image_disp=None
+        relfp_image_disp=None,
     ):
         self.mode_prev = 0
         self.mode = 0
@@ -173,8 +173,12 @@ class RaspiTftDisplay:
 
     @memfunc_decorator(30)
     def clear(self):
-        self.backlight.value = False
-        self.disp.fill(0)
+        if self.backlight.value:
+            self.disp_fill(0)
+            self.backlight.value = False
+        else:
+            pass
+
 
     @memfunc_decorator(.25)
     def disp_mandelbrot(self, scan_params=None):
@@ -321,13 +325,6 @@ if __name__ == '__main__':
     backlight_pin = board.D22
     button_a_pin, button_b_pin = board.D23, board.D24
 
-    mandelbrot_scan_params = {
-        'radius_limits': {'min': .1, 'max': 1.5},
-        'radius_change_rate': 1.2,
-        'pan_vel_to_radius_ratio': (.1, 1 / math.pi),
-        'extent': (-2, -1.5, 1, 1.5)
-    }
-
     tft = RaspiTftDisplay(
         baudrate=64000000,
         width=width, height=height, rotation=rotation, x_offset=0, y_offset=80,
@@ -338,8 +335,22 @@ if __name__ == '__main__':
         relfp_mktdata=relfp_mkt_data,
         relfp_image_disp=relfp_image_disp
     )
+    tft.mandelbrot_extent_params = {
+        'center': [-1.4002, 0],
+        'radius': 1.5,
+        'radius_rate': 1 / 1.2,
+        'pan_vel_to_radius_ratio': [.1, 0],
+    }
+    mandelbrot_scan_params = {
+        'radius_limits': {'min': .1, 'max': 1.5},
+        'radius_change_rate': 1.2,
+        'pan_vel_to_radius_ratio': (.1, 0),
+        'extent': (-1.4011, 0, -1.4002, 0)
+    }
+
     buffer_mode = 2
 
+    print('initialized dashboard object. stepping into (intended) infinite loop now...')
     while True:
         if time.time() > tft.time_to_read_button:
             tft.time_to_read_button = time.time() + time_interval_button
