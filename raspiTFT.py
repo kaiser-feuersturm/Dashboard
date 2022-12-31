@@ -342,10 +342,10 @@ if __name__ == '__main__':
         'pan_vel_to_radius_ratio': [1e-5, 0],
     }
     mandelbrot_scan_params = {
-        'radius_limits': {'min': 1e-3, 'max': 3},
+        'radius_limits': {'min': 1e-2, 'max': 3},
         'radius_change_rate': 1.2,
         'pan_vel_to_radius_ratio': (1e-5, 0),
-        'extent': (-1.4011 - 1.5, -1.5, 1.4002 + 1.5, 1.5)
+        'extent': (-4.4002, -3, -1.4002 + 3, 3)
     }
 
     buffer_mode = 2
