@@ -8,7 +8,8 @@ from PIL import Image, ImageDraw, ImageFont
 from adafruit_rgb_display import st7789
 from adafruit_rgb_display.rgb import color565
 import yfinance as yf
-import pandas as pd
+# import pandas as pd
+from pandas import read_pickle, read_csv, DataFrame, concat
 # import ystockquote, stockquotes, yahoo_fin
 
 calendar.setfirstweekday(calendar.SUNDAY)
@@ -41,19 +42,19 @@ def memfunc_decorator(min_time_inter_update, min_time_to_consume=0):
 def query_mkt_data(mktdata_settings, filepath_mktdata, cols_filter=None):
     to_download = True
     try:
-        mktdata = pd.read_pickle(filepath_mktdata)
+        mktdata = read_pickle(filepath_mktdata)
         today = datetime.date.today()
         if mktdata.index.max().date() >= today or time.time() - os.path.getmtime(filepath_mktdata) < 7200:
             to_download = False
     except:
-        mktdata = pd.DataFrame()
+        mktdata = DataFrame()
 
     if to_download:
         tickers = mktdata_settings.index.to_list()
         mktdata_ = yf.download(' '.join(tickers), period='10y', interval='1d')
         mktdata_index = mktdata_.index.difference(mktdata.index)
         mktdata_ = mktdata_.loc[mktdata_index, :]
-        mktdata = pd.concat([mktdata, mktdata_]).sort_index().drop_duplicates()
+        mktdata = concat([mktdata, mktdata_]).sort_index().drop_duplicates()
         mktdata.to_pickle(filepath_mktdata)
 
     retval = mktdata if cols_filter is None else mktdata.loc[:, cols_filter]
@@ -69,7 +70,7 @@ def pil_draw_text_calendar(draw, xy, size, font, consistent_sizing=True,
                            color_weekend='#FF0000', color_weekday='#FFFFFF',
                            align_to_right=True, mark_today=None):
     date_today = datetime.date.today()
-    str_cmp = '{}'.format(date_today.day) if mark_today is not None else '__wtf__'
+    str_cmp = '__wtf__' if mark_today is None else '{}'.format(date_today.day)
     cal_matrix = calendar.monthcalendar(date_today.year, date_today.month)
     str_matrix = [[calendar.TextCalendar.formatweekday(None, (ix - 1) % 7, 2) for ix in range(7)]]
     str_matrix += [['{}'.format(d) if d > 0 else '' for d in w] for w in cal_matrix]
@@ -144,7 +145,7 @@ class RaspiTftDisplay:
         self.mktdata = None
         self.filepath_mktdata = filepath_from_relfp(relfp_mktdata)
         self.filepath_image_disp = filepath_from_relfp(relfp_image_disp)
-        self.mktdata_settings = pd.read_csv(
+        self.mktdata_settings = read_csv(
             filepath_from_relfp(relfp_mktdata_query_settings),
             sep=',', index_col='ticker'
         )
@@ -342,7 +343,7 @@ if __name__ == '__main__':
         'pan_vel_to_radius_ratio': [1e-5, 0],
     }
     mandelbrot_scan_params = {
-        'radius_limits': {'min': 1e-2, 'max': 3},
+        'radius_limits': {'min': .1, 'max': 3},
         'radius_change_rate': 1.2,
         'pan_vel_to_radius_ratio': (1e-5, 0),
         'extent': (-4.4002, -3, -1.4002 + 3, 3)
