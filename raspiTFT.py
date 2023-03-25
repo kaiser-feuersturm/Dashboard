@@ -1,23 +1,22 @@
-import functools, os, json, psutil, calendar
+import os, json, psutil, calendar
 import time, math, datetime, random
 import digitalio, board
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-# import matplotlib.ticker as mticker
 from PIL import Image, ImageDraw, ImageFont
 from adafruit_rgb_display import st7789
 from adafruit_rgb_display.rgb import color565
 import yfinance as yf
-# import pandas as pd
 from pandas import read_pickle, read_csv, DataFrame, concat
-# import ystockquote, stockquotes, yahoo_fin
+from functools import wraps
+from picamera import PiCamera
 
 calendar.setfirstweekday(calendar.SUNDAY)
 
 
 def memfunc_decorator(min_time_inter_update, min_time_to_consume=0):
     def decorate_inner(func):
-        @functools.wraps(func)
+        @wraps(func)
         def wrapper_dec(*args, **kwargs):
             ref = args[0]
             _time = time.time()
@@ -96,6 +95,7 @@ def pil_draw_text_calendar(draw, xy, size, font, consistent_sizing=True,
 
     return (x + size[0], y + size[1])
 
+
 def pil_draw_text_sys_stats(draw, xy, font, align_segments=True):
     cpu_pct = 'CPU: {:.0f}%'.format(psutil.cpu_percent(interval=.2, percpu=False))
     mem_stats = 'Mem: {:.1f}%'.format(psutil.virtual_memory().percent)
@@ -113,6 +113,7 @@ def pil_draw_text_sys_stats(draw, xy, font, align_segments=True):
         y += bbox[3]
 
     return (x_max, y)
+
 
 class RaspiTftDisplay:
     def __init__(
@@ -172,6 +173,9 @@ class RaspiTftDisplay:
             width=width, height=height, x_offset=x_offset, y_offset=y_offset
         )
 
+        self.camera = PiCamera()
+
+
     @memfunc_decorator(30)
     def clear(self):
         if self.backlight.value:
@@ -218,6 +222,7 @@ class RaspiTftDisplay:
         image = Image.effect_mandelbrot((self.width, self.height), tuple(extent), 100).convert('RGBA')
         self.disp.image(image, self.rotation)
 
+
     @memfunc_decorator(3)
     def disp_fill(self):
         self.backlight.value = True
@@ -238,6 +243,7 @@ class RaspiTftDisplay:
 
         self.disp_mode_fill += 1
         self.disp_mode_fill %= 4
+
 
     @memfunc_decorator(1)
     def disp_system_stats(self):
@@ -260,6 +266,7 @@ class RaspiTftDisplay:
                                mark_today={'outline': '#FFFF00'})
         pil_draw_text_sys_stats(draw, (0, xy_[1] + 10), font)
         self.disp.image(image, self.rotation)
+
 
     @memfunc_decorator(15)
     def disp_markets(self):
@@ -310,6 +317,15 @@ class RaspiTftDisplay:
 
         self.mktdata_groupid += 1
         self.mktdata_groupid %= mktdata_groups.size * len(self.mktdata_plot_settings['lookbacks'])
+
+
+    @memfunc_decorator(5)
+    def disp_camera(self):
+        self.camera.capture(self.filepath_image_disp, format='jpeg')
+        image_disp = Image.open(self.filepath_image_disp).convert('RGBA').resize(
+            (self.width, self.height), Image.Resampling.BICUBIC
+        )
+        self.disp.image(image_disp, self.rotation)
 
 
 if __name__ == '__main__':
@@ -365,7 +381,7 @@ if __name__ == '__main__':
                 tft.mode -= 1
 
             if -buffer_mode < tft.mode:
-                tft.mode %= 4
+                tft.mode %= 5
 
         # print('mode ' + repr(tft.mode) + '\t' + repr(time.time()))
 
@@ -379,3 +395,5 @@ if __name__ == '__main__':
             tft.disp_fill()
         elif 3 == tft.mode:
             tft.disp_mandelbrot(scan_params=mandelbrot_scan_params)
+        elif 4 == tft.mode:
+            tft.disp_camera()
