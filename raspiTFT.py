@@ -10,6 +10,8 @@ import yfinance as yf
 from pandas import read_pickle, read_csv, DataFrame, concat
 from functools import wraps
 from picamera import PiCamera
+from io import BytesIO
+
 
 calendar.setfirstweekday(calendar.SUNDAY)
 
@@ -319,10 +321,12 @@ class RaspiTftDisplay:
         self.mktdata_groupid %= mktdata_groups.size * len(self.mktdata_plot_settings['lookbacks'])
 
 
-    @memfunc_decorator(5)
+    @memfunc_decorator(.1)
     def disp_camera(self):
-        self.camera.capture(self.filepath_image_disp, format='jpeg')
-        image_disp = Image.open(self.filepath_image_disp).convert('RGBA').resize(
+        stream_camera = BytesIO()
+        self.camera.capture(stream_camera, format='jpeg')
+        stream_camera.seek(0)
+        image_disp = Image.open(stream_camera).convert('RGBA').resize(
             (self.width, self.height), Image.Resampling.BICUBIC
         )
         self.disp.image(image_disp, self.rotation)
