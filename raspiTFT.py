@@ -326,9 +326,9 @@ class RaspiTftDisplay:
 
     @memfunc_decorator(.05)
     def disp_camera(self):
-        self.camera.capture(self.stream_camera, format='RGBA')
+        self.camera.capture(self.stream_camera, format='png')
         self.stream_camera.seek(0)
-        image_disp = Image.open(self.stream_camera)
+        image_disp = Image.open(self.stream_camera).convert('RGBA')
         self.disp.image(image_disp, self.rotation_camera)
 
 
