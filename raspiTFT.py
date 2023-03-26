@@ -120,7 +120,8 @@ def pil_draw_text_sys_stats(draw, xy, font, align_segments=True):
 class RaspiTftDisplay:
     def __init__(
         self, baudrate=64000000,
-        width=240, height=240, rotation=0, x_offset=0, y_offset=80,
+        width=240, height=240, x_offset=0, y_offset=80,
+        rotation=0, rotation_camera=0,
         cs_pin=None, dc_pin=None, reset_pin=None, backlight_pin=None,
         button_a_pin=None, button_b_pin=None,
         spi=None,
@@ -134,6 +135,7 @@ class RaspiTftDisplay:
         self.width = width
         self.height = height
         self.rotation = rotation
+        self.rotation_camera = (rotation + rotation_camera) % 360
         self.time_to_update = time.time()
         self.time_to_read_button = time.time()
 
@@ -175,7 +177,7 @@ class RaspiTftDisplay:
             width=width, height=height, x_offset=x_offset, y_offset=y_offset
         )
 
-        self.camera = PiCamera()
+        self.camera = PiCamera(resolution=(width, height))
 
 
     @memfunc_decorator(30)
@@ -321,14 +323,12 @@ class RaspiTftDisplay:
         self.mktdata_groupid %= mktdata_groups.size * len(self.mktdata_plot_settings['lookbacks'])
 
 
-    @memfunc_decorator(.1)
+    @memfunc_decorator(.05)
     def disp_camera(self):
         stream_camera = BytesIO()
-        self.camera.capture(stream_camera, format='jpeg')
+        self.camera.capture(stream_camera, format='rgb')
         stream_camera.seek(0)
-        image_disp = Image.open(stream_camera).convert('RGBA').resize(
-            (self.width, self.height), Image.Resampling.BICUBIC
-        )
+        image_disp = Image.open(stream_camera)
         self.disp.image(image_disp, self.rotation)
 
 
@@ -340,6 +340,7 @@ if __name__ == '__main__':
 
     width = height = 240
     rotation = 180
+    rotation_camera = 180
     time_interval_button = .2
 
     cs_pin, dc_pin = board.CE0, board.D25
@@ -348,7 +349,8 @@ if __name__ == '__main__':
 
     tft = RaspiTftDisplay(
         baudrate=64000000,
-        width=width, height=height, rotation=rotation, x_offset=0, y_offset=80,
+        width=width, height=height, x_offset=0, y_offset=80,
+        rotation=rotation, rotation_camera=rotation_camera,
         cs_pin=cs_pin, dc_pin=dc_pin, reset_pin=None, backlight_pin=backlight_pin,
         button_a_pin=button_a_pin, button_b_pin=button_b_pin,
         relfp_mktdata_query_settings=relfp_mkt_data_query_settings,
