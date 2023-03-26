@@ -178,6 +178,7 @@ class RaspiTftDisplay:
         )
 
         self.camera = PiCamera(resolution=(width, height))
+        self.stream_camera = BytesIO()
 
 
     @memfunc_decorator(30)
@@ -325,11 +326,10 @@ class RaspiTftDisplay:
 
     @memfunc_decorator(.05)
     def disp_camera(self):
-        stream_camera = BytesIO()
-        self.camera.capture(stream_camera, format='rgb')
-        stream_camera.seek(0)
-        image_disp = Image.open(stream_camera)
-        self.disp.image(image_disp, self.rotation)
+        self.camera.capture(self.stream_camera, format='RGBA')
+        self.stream_camera.seek(0)
+        image_disp = Image.open(self.stream_camera)
+        self.disp.image(image_disp, self.rotation_camera)
 
 
 if __name__ == '__main__':
