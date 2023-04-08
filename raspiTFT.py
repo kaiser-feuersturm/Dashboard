@@ -342,7 +342,7 @@ if __name__ == '__main__':
 
     width = height = 240
     rotation = 180
-    rotation_camera = 90
+    rotation_camera = -90
     time_interval_button = .2
 
     cs_pin, dc_pin = board.CE0, board.D25
