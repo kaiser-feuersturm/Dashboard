@@ -1,7 +1,7 @@
 ticker,name,normalize,group,color,linestyle
-SPY,SPY,TRUE,0,black,-
-GS,GS,TRUE,0,blue,--
+SPY,SPY,TRUE,0,orange,-
+GS,GS,TRUE,0,cyan,--
 GSG,GSCI ETF,TRUE,0,magenta,-.
-^FVX,5y TY Yield,FALSE,1,black,-
-^TNX,10y TY Yield,FALSE,1,blue,--
+^FVX,5y TY Yield,FALSE,1,orange,-
+^TNX,10y TY Yield,FALSE,1,cyan,--
 ^TYX,30y TY Yield,FALSE,1,magenta,-.

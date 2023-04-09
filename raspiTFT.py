@@ -302,7 +302,8 @@ class RaspiTftDisplay:
             'grid.color': 'w',
             'grid.linestyle': '--',
             'xtick.color': 'w',
-            'ytick.color': 'w'
+            'ytick.color': 'w',
+            'legend.labelcolor': 'w'
         }):
             fig, ax = plt.subplots(figsize=(4, 4))
             ax.xaxis.set_major_locator(mdates.MonthLocator(bymonth=lookback['x_bymonth']))
@@ -413,6 +414,5 @@ if __name__ == '__main__':
         elif 3 == tft.mode:
             tft.disp_mandelbrot(scan_params=mandelbrot_scan_params)
         elif 4 == tft.mode:
-            tft.camera = PiCamera(resolution=(width, height))
-            tft.disp_camera()
-            tft.camera.close()
+            with PiCamera(resolution=(width, height)) as tft.camera:
+                tft.disp_camera()
