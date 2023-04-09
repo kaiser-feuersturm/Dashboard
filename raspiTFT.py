@@ -335,14 +335,12 @@ class RaspiTftDisplay:
 
     @memfunc_decorator(.05)
     def disp_camera(self):
-        self.camera = PiCamera(resolution=(width, height))
         self.camera.capture(self.stream_camera, format='png')
         self.stream_camera.seek(0)
         image_disp = Image.open(self.stream_camera).convert('RGBA')
         self.stream_camera.seek(0)
         self.stream_camera.truncate(0)
         self.disp.image(image_disp, self.rotation_camera)
-        self.camera = None
 
 
 if __name__ == '__main__':
@@ -415,4 +413,6 @@ if __name__ == '__main__':
         elif 3 == tft.mode:
             tft.disp_mandelbrot(scan_params=mandelbrot_scan_params)
         elif 4 == tft.mode:
+            tft.camera = PiCamera(resolution=(width, height))
             tft.disp_camera()
+            tft.camera.close()
