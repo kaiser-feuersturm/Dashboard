@@ -181,7 +181,7 @@ class RaspiTftDisplay:
         self.stream_camera = BytesIO()
 
 
-    @memfunc_decorator(30)
+    @memfunc_decorator(60)
     def clear(self):
         if self.backlight.value:
             self.disp.fill(0)
@@ -294,21 +294,27 @@ class RaspiTftDisplay:
         if to_scale:
             mktdata_ = mktdata_ / mktdata_.iloc[1, :]
 
-        fig, ax = plt.subplots(figsize=(4, 4))
-        ax.xaxis.set_major_locator(mdates.MonthLocator(bymonth=lookback['x_bymonth']))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter(lookback['x_dateformatter']))
-        ax.grid(True, which='major')
-        mktdata_.plot(
-            grid=True, ax=ax,
-            style=settings_.loc[:, 'linestyle'].to_dict(),
-            color=settings_.loc[:, 'color'].to_dict()
-        )
-
-        fig.canvas.draw()
-        image = Image.frombytes('RGB', fig.canvas.get_width_height(), fig.canvas.tostring_rgb()).resize(
-            (self.width, self.height), Image.Resampling.BICUBIC
-        )
-        plt.close('all')
+        with plt.rc_context({
+            'figure.facecolor': 'k',
+            'figure.edgecolor': 'k',
+            'axes.edgecolor': 'w',
+            'xtick.color': 'w',
+            'ytick.color': 'w'
+        }):
+            fig, ax = plt.subplots(figsize=(4, 4))
+            ax.xaxis.set_major_locator(mdates.MonthLocator(bymonth=lookback['x_bymonth']))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter(lookback['x_dateformatter']))
+            ax.grid(True, which='major')
+            mktdata_.plot(
+                grid=True, ax=ax,
+                style=settings_.loc[:, 'linestyle'].to_dict(),
+                color=settings_.loc[:, 'color'].to_dict()
+            )
+            fig.canvas.draw()
+            image = Image.frombytes('RGB', fig.canvas.get_width_height(), fig.canvas.tostring_rgb()).resize(
+                (self.width, self.height), Image.Resampling.BICUBIC
+            )
+            plt.close('all')
 
         x = 0
         draw = ImageDraw.Draw(image)
